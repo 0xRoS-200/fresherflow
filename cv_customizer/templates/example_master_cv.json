@@ -1,0 +1,305 @@
+{
+  "cv_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "user_123",
+  "personal_info": {
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1-555-123-4567",
+    "location": "San Francisco, CA, USA",
+    "linkedin_url": "https://linkedin.com/in/johndoe",
+    "github_url": "https://github.com/johndoe",
+    "portfolio_url": "https://johndoe.dev",
+    "personal_website": null,
+    "twitter_handle": "@johndoe"
+  },
+  "professional_summary": {
+    "headline": "Senior Full-Stack Developer | Python & React Expert with 5+ Years Experience",
+    "summary": "Passionate full-stack engineer with 5+ years of experience building scalable web applications and microservices. Specialized in Python, FastAPI, and React. Proven track record of leading cross-functional teams and delivering high-impact projects that increased business metrics by 40%+. Strong advocate for clean code, test-driven development, and continuous learning.",
+    "total_experience_years": 5,
+    "specialization": "Full-Stack Web Development",
+    "key_achievements": [
+      "Led architectural redesign reducing API response time by 60%",
+      "Mentored 5 junior developers, 3 promoted to senior roles",
+      "Implemented CI/CD pipeline reducing deployment time by 80%"
+    ]
+  },
+  "experience": [
+    {
+      "company_name": "Tech Corp Inc.",
+      "job_title": "Senior Backend Engineer",
+      "employment_type": "full_time",
+      "location": "San Francisco, CA",
+      "start_date": "2023-03",
+      "end_date": null,
+      "is_current": true,
+      "description": "Led development and maintenance of microservices architecture supporting 5M+ daily users. Designed and implemented real-time data processing pipelines using Apache Kafka. Collaborated with cross-functional teams to improve system performance and reliability.",
+      "achievements": [
+        "Improved API response time by 60% through query optimization",
+        "Reduced infrastructure costs by 35% through resource optimization",
+        "Mentored 3 junior engineers on best practices and design patterns"
+      ],
+      "skills_used": [
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Docker",
+        "Kubernetes",
+        "Apache Kafka",
+        "Redis",
+        "AWS"
+      ]
+    },
+    {
+      "company_name": "StartupXYZ",
+      "job_title": "Full-Stack Developer",
+      "employment_type": "full_time",
+      "location": "Remote",
+      "start_date": "2021-06",
+      "end_date": "2023-02",
+      "is_current": false,
+      "description": "Developed and maintained web platform connecting 100K+ users. Built responsive frontend using React and React Native. Implemented backend services in Node.js and Python. Managed PostgreSQL and MongoDB databases.",
+      "achievements": [
+        "Reduced page load time by 50% through optimization",
+        "Implemented automated testing achieving 85% code coverage",
+        "Led migration from monolithic to microservices architecture"
+      ],
+      "skills_used": [
+        "React",
+        "React Native",
+        "Node.js",
+        "Python",
+        "PostgreSQL",
+        "MongoDB",
+        "Firebase",
+        "Git"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University of California, Berkeley",
+      "degree": "bachelor",
+      "field_of_study": "Computer Science",
+      "location": "Berkeley, CA",
+      "start_date": "2017-09",
+      "graduation_date": "2021-05",
+      "gpa": 3.8,
+      "grade": null,
+      "description": "Focused on software engineering, distributed systems, and machine learning.",
+      "activities": [
+        "Debate Club President",
+        "Dean's List (All semesters)",
+        "Hackathon Winner - 2020"
+      ],
+      "courses": [
+        "Data Structures",
+        "Algorithms",
+        "Distributed Systems",
+        "Machine Learning",
+        "Web Development",
+        "Database Systems"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Python",
+      "level": "expert",
+      "category": "Programming Languages",
+      "endorsements": 45,
+      "years_of_experience": 5
+    },
+    {
+      "name": "FastAPI",
+      "level": "expert",
+      "category": "Web Frameworks",
+      "endorsements": 32,
+      "years_of_experience": 3
+    },
+    {
+      "name": "React",
+      "level": "advanced",
+      "category": "Frontend Frameworks",
+      "endorsements": 28,
+      "years_of_experience": 4
+    },
+    {
+      "name": "PostgreSQL",
+      "level": "advanced",
+      "category": "Databases",
+      "endorsements": 25,
+      "years_of_experience": 4
+    },
+    {
+      "name": "Docker",
+      "level": "advanced",
+      "category": "DevOps",
+      "endorsements": 22,
+      "years_of_experience": 3
+    },
+    {
+      "name": "Kubernetes",
+      "level": "intermediate",
+      "category": "DevOps",
+      "endorsements": 15,
+      "years_of_experience": 2
+    },
+    {
+      "name": "AWS",
+      "level": "advanced",
+      "category": "Cloud Platforms",
+      "endorsements": 18,
+      "years_of_experience": 3
+    },
+    {
+      "name": "Git",
+      "level": "expert",
+      "category": "Version Control",
+      "endorsements": 40,
+      "years_of_experience": 5
+    },
+    {
+      "name": "RESTful APIs",
+      "level": "expert",
+      "category": "Architecture",
+      "endorsements": 35,
+      "years_of_experience": 5
+    },
+    {
+      "name": "Machine Learning",
+      "level": "intermediate",
+      "category": "Data Science",
+      "endorsements": 12,
+      "years_of_experience": 2
+    }
+  ],
+  "languages": [
+    {
+      "name": "English",
+      "proficiency": "expert",
+      "native": true
+    },
+    {
+      "name": "Spanish",
+      "proficiency": "intermediate",
+      "native": false
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect - Professional",
+      "issuer": "Amazon Web Services",
+      "issue_date": "2023-06",
+      "expiration_date": "2025-06",
+      "is_active": true,
+      "credential_id": "AWS-123456",
+      "credential_url": "https://aws.amazon.com/verification/123456",
+      "description": "Demonstrated ability to design and deploy robust, scalable, and cost-effective applications on AWS"
+    },
+    {
+      "name": "Kubernetes for Developers",
+      "issuer": "Linux Foundation",
+      "issue_date": "2023-03",
+      "expiration_date": null,
+      "is_active": true,
+      "credential_id": "LFCK-789012",
+      "credential_url": null,
+      "description": "Proficiency in containerization and orchestration with Kubernetes"
+    }
+  ],
+  "projects": [
+    {
+      "name": "AI Resume Parser",
+      "description": "Built a production-grade AI-powered resume parsing system using LLMs and machine learning. The system automatically extracts structured data from unstructured resume documents with 95%+ accuracy. Integrated with multiple LLM providers (Claude, Gemini, ChatGPT) with fallback support.",
+      "start_date": "2024-01",
+      "end_date": null,
+      "is_current": true,
+      "technologies_used": [
+        "Python",
+        "FastAPI",
+        "LangChain",
+        "Pydantic",
+        "PostgreSQL",
+        "Docker",
+        "LLM APIs"
+      ],
+      "role": "Lead Developer",
+      "team_size": 3,
+      "project_url": "https://example.com/resume-parser",
+      "github_url": "https://github.com/johndoe/resume-parser",
+      "demo_url": "https://demo.example.com/resume-parser",
+      "key_achievements": [
+        "Designed multi-agent architecture for robust data extraction",
+        "Achieved 95% parsing accuracy on diverse resume formats",
+        "Processed 10,000+ resumes in beta testing",
+        "Implemented automatic fallback between LLM providers"
+      ],
+      "outcomes": "Successfully deployed with 1000+ active users. System handles 500+ resumes daily with 99.9% uptime"
+    },
+    {
+      "name": "Real-time Analytics Dashboard",
+      "description": "Developed comprehensive real-time analytics dashboard for monitoring application performance and user behavior. Dashboard processes 1M+ events daily using Apache Kafka and ClickHouse.",
+      "start_date": "2023-06",
+      "end_date": "2023-12",
+      "is_current": false,
+      "technologies_used": [
+        "React",
+        "TypeScript",
+        "Apache Kafka",
+        "ClickHouse",
+        "Grafana",
+        "Docker"
+      ],
+      "role": "Full-Stack Engineer",
+      "team_size": 4,
+      "project_url": null,
+      "github_url": "https://github.com/johndoe/analytics-dashboard",
+      "demo_url": null,
+      "key_achievements": [
+        "Designed scalable data pipeline handling 1M events/day",
+        "Built interactive dashboard with 50+ custom visualizations",
+        "Reduced query latency from 5s to 500ms through optimization",
+        "Trained team on new tech stack"
+      ],
+      "outcomes": "Dashboard became critical for business intelligence team, leading to $2M in identified revenue opportunities"
+    }
+  ],
+  "achievements": [
+    {
+      "title": "Employee of the Year 2023",
+      "description": "Recognized for exceptional contribution to company growth, innovation, and team leadership at Tech Corp Inc.",
+      "date": "2023-12",
+      "issuer": "Tech Corp Inc.",
+      "url": null
+    },
+    {
+      "title": "Published Article: Scaling FastAPI Applications",
+      "description": "Technical article published on Medium covering best practices for scaling FastAPI applications to millions of users",
+      "date": "2023-09",
+      "issuer": "Medium",
+      "url": "https://medium.com/@johndoe/scaling-fastapi"
+    },
+    {
+      "title": "Hackathon Winner",
+      "description": "Won university hackathon with AI-powered project management tool",
+      "date": "2020-05",
+      "issuer": "UC Berkeley",
+      "url": null
+    }
+  ],
+  "additional_sections": {
+    "publications": "Published 3 technical articles on Medium and Dev.to about backend architecture and Python best practices",
+    "volunteering": "Mentor at Code2040, helping underrepresented students enter tech industry",
+    "interests": "Open-source contribution, distributed systems design, machine learning applications"
+  },
+  "metadata": {
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-06-16T14:45:30Z",
+    "source": "portfolio",
+    "extraction_confidence": 0.95,
+    "parser_version": "1.0.0",
+    "last_ats_score": 0.88,
+    "last_ats_check_date": "2024-06-15T09:20:00Z"
+  }
+}
