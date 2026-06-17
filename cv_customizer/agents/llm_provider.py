@@ -303,19 +303,30 @@ class OllamaProvider(LLMProvider):
             import requests
 
             # Check if Ollama is running
+            headers = {}
+            if "ngrok" in self.base_url.lower():
+                headers["ngrok-skip-browser-warning"] = "true"
+
             try:
-                resp = requests.get(f"{self.base_url}/api/tags", timeout=2)
+                # Strip trailing slash from base_url to avoid duplicate slashes
+                clean_url = self.base_url.rstrip('/')
+                resp = requests.get(f"{clean_url}/api/tags", headers=headers, timeout=5)
                 if resp.status_code != 200:
-                    logger.warning(f"Ollama server not responding at {self.base_url}")
+                    logger.warning(f"Ollama server not responding at {self.base_url} (status code {resp.status_code})")
                     return False
-            except requests.RequestException:
-                logger.warning(f"Cannot connect to Ollama at {self.base_url}")
+            except requests.RequestException as e:
+                logger.warning(f"Cannot connect to Ollama at {self.base_url}: {e}")
                 return False
+
+            client_kwargs = {}
+            if headers:
+                client_kwargs["client_kwargs"] = {"headers": headers}
 
             self.client = ChatOllama(
                 base_url=self.base_url,
                 model=self.model_name,
                 temperature=0.7,
+                **client_kwargs
             )
             logger.info(f"Ollama provider initialized with model {self.model_name}")
             return True

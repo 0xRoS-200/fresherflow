@@ -14,7 +14,12 @@ def _try_ollama() -> Optional[Any]:
     model_name = os.getenv("OLLAMA_MODEL", "qwen2.5-coder:7b")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     print(f"[LLM] Trying Ollama '{model_name}' at {base_url}")
-    return ChatOllama(model=model_name, base_url=base_url, temperature=0.1)
+    
+    kwargs = {}
+    if "ngrok" in base_url.lower():
+        kwargs["client_kwargs"] = {"headers": {"ngrok-skip-browser-warning": "true"}}
+        
+    return ChatOllama(model=model_name, base_url=base_url, temperature=0.1, **kwargs)
 
 
 def _try_gemini() -> Optional[Any]:
