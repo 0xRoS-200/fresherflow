@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FresherFlow</title>
+  <title>FresherFlow - Multi-Agent AI Resume Parser & Tailor Assistant</title>
+  <meta name="description" content="Sleek, multi-agent AI resume parsing, ATS job matching, and LLM-driven resume tailoring assistant for tech candidates.">
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
@@ -18,6 +19,14 @@
         <div class="logo">FF</div>
         <div><div class="brand-title">FresherFlow</div><div class="muted small">Fresher job search</div></div>
       </div>
+      
+      <nav class="nav-tabs" id="navTabs">
+        <a href="#/parse" class="nav-tab active" id="tab-parse">Parser</a>
+        <a href="#/editor" class="nav-tab" id="tab-editor">CV Builder</a>
+        <a href="#/matches" class="nav-tab" id="tab-matches">Job Matches</a>
+        <a href="#/tailor" class="nav-tab" id="tab-tailor">Tailor Assistant</a>
+      </nav>
+
       <div class="toolbar">
         <button class="btn btn-secondary" id="themeBtn">Toggle theme</button>
         <button class="btn btn-ghost" id="shareBtn">Copy URL</button>
@@ -25,85 +34,430 @@
     </div>
   </header>
 
-  <main class="container main-grid">
-    <section class="hero card glass">
-      <div>
-        <p class="eyebrow">Best matches first</p>
-        <h1>Find fresher jobs by resume, skills, role, and location.</h1>
-        <p class="hero-description">Upload a resume or paste text, <span class="highlight">extract skills</span>, and match against <span class="highlight">live India tech jobs</span>.</p>      </div>
-
-    </section>
-
-    <section class="panel card glass filters-panel">
-      <h2>Candidate profile</h2>
-      <label>Upload resume (PDF, DOCX, TXT, MD — not audio or video)</label>
-      <input id="resumeFile" type="file">
-      <label>Paste resume / skills</label>
-      <textarea id="resumeText" placeholder="Paste resume text here..."></textarea>
-      <div class="actions">
-        <button class="btn btn-secondary" id="clearProfileBtn">Clear</button>
-      </div>
-      <div class="chips" id="extractedSkills"></div>
-
-      <div class="divider"></div>
-      <div class="agent-card">
-        <div class="agent-header">
-          <h2>Personalized fresher agent</h2>
-          <p class="muted small">Collects fresher jobs and ranks the matches for your resume.</p>
-        </div>
-        <div class="actions agent-actions">
-          <button class="btn btn-primary" id="agentRunBtn">Run agent</button>
-          <button class="btn btn-secondary" id="agentOpenBtn">Open top matches</button>
-          <button class="btn btn-ghost" id="agentExportBtn">Export shortlist</button>
-        </div>
-        <div class="agent-status" id="agentStatus">Agent is idle. Upload or paste your resume, then run the agent.</div>
-      </div>
-
-      <div class="divider"></div>
-      <h2>Filters</h2>
-      <div class="filter-grid">
-        <div><label>Role keywords</label><input id="roleKeywords" value="" placeholder="software engineer, frontend, developer"></div>
-        <div><label>Location</label><select id="location"><option value="" selected>Any</option><option value="India">India (all cities)</option><option>Remote</option><option>Bengaluru</option><option>Hyderabad</option><option>Pune</option><option>Chennai</option><option>Mumbai</option><option>Delhi</option></select></div>
-        <div><label>Mode</label><select id="mode"><option value="">Any</option><option>Remote</option><option>Hybrid</option><option>Onsite</option></select></div>
-        <div><label>Type</label><select id="jobType"><option value="">Any</option><option>Full-time</option><option>Internship</option><option>Apprenticeship</option><option>Contract</option></select></div>
-        <div><label>Posted within</label><select id="postedWithin"><option value="365">Any time</option><option value="30">30 days</option><option value="14">14 days</option><option value="7">7 days</option><option value="3">3 days</option></select></div>
-      </div>
-      <div class="checklist">
-        <label class="check"><input id="remoteOnly" type="checkbox"> Remote only</label>
-        <label class="check"><input id="fresherOnly" type="checkbox"> Entry-level software only</label>
-        <label class="check"><input id="trustedOnly" type="checkbox"> Trusted sources only</label>
-        <label class="check"><input id="mlMode" type="checkbox" checked> ML ranking mode</label>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" id="applyFiltersBtn">Apply</button>
-        <button class="btn btn-secondary" id="resetBtn">Reset</button>
-        <button class="btn btn-ghost" id="exportBtn">Export identified jobs</button>
-      </div>
-      <div class="chips" id="activeChips"></div>
-    </section>
-
-    <section class="panel card glass results-panel">
-      <div class="results-head">
+  <main class="container">
+    <!-- PAGE 1: PARSER & AGENT WORKFLOW -->
+    <div id="page-parse" class="page-section active">
+      <section class="hero card glass" style="margin-bottom: 22px;">
         <div>
-          <h2>Matched jobs</h2>
-          <p class="muted small" id="jobsFeedStatus">Loading job feed…</p>
+          <p class="eyebrow">Best matches first</p>
+          <h1>Find fresher jobs by resume, skills, role, and location.</h1>
+          <p class="hero-description">Upload a resume or paste text, <span class="highlight">extract skills</span>, and match against <span class="highlight">live India tech jobs</span>.</p>
         </div>
-        <div class="toolbar">
-          <button class="btn btn-secondary" id="refreshJobsBtn" type="button">Refresh jobs</button>
-          <div class="sort-container">
-            <span class="sort-label">Sort by</span>
-            <select id="sortBy" class="select-sort">
-              <option value="recent">Newest posted first</option>
-              <option value="score" selected>Best match (then newest)</option>
-              <option value="company">Company A-Z (then newest)</option>
+      </section>
+
+      <div class="parse-grid">
+        <!-- Left: Upload/Paste -->
+        <section class="panel card glass" id="profileInputView">
+          <h2>Candidate profile</h2>
+          <label>Option A: Upload resume (PDF, DOCX, TXT, MD)</label>
+          <input id="resumeFile" type="file">
+          
+          <div class="divider"></div>
+          
+          <label>Option B: Scrape Portfolio Website (Selenium scraper)</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="portfolioUrl" placeholder="e.g. https://myportfolio.com" style="flex: 1; border-radius: 16px;">
+            <button class="btn btn-primary" id="portfolioScrapeBtn" style="padding: 0 16px; border-radius: 16px; font-weight:800; font-size:0.85rem;">Scrape Link</button>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <label>Option C: Paste resume text / skills</label>
+          <textarea id="resumeText" placeholder="Paste resume text here..."></textarea>
+          <div class="actions">
+            <button class="btn btn-secondary" id="clearProfileBtn">Clear Profile</button>
+          </div>
+          <div class="chips" id="extractedSkills"></div>
+        </section>
+
+        <!-- Right: Multi-Agent visualization -->
+        <section class="panel card glass agent-panel">
+          <div class="agent-card">
+            <div class="agent-header">
+              <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <h2 style="margin:0; font-size:1.2rem;">Multi-Agent (LangGraph)</h2>
+                <span class="badge" style="font-weight:800; font-size:0.7rem; padding: 2px 6px;">V2.0</span>
+              </div>
+              <p class="muted small" style="margin: 4px 0 0 0;">Visualizing resume parsing, matching, and tailoring orchestration.</p>
+            </div>
+
+            <!-- LangGraph Visualizer -->
+            <div class="graph-visualizer">
+              <svg class="graph-edges" viewBox="0 0 320 80">
+                <path id="path-parser-matcher" d="M 80 40 L 140 40" class="edge-path" />
+                <path id="path-matcher-tailor" d="M 200 40 L 260 40" class="edge-path" />
+              </svg>
+
+              <div class="graph-nodes">
+                <div class="graph-node" id="node-parser">
+                  <div class="node-icon">📄</div>
+                  <div class="node-label">Parser</div>
+                  <div class="node-status-dot"></div>
+                </div>
+                <div class="graph-node" id="node-matcher">
+                  <div class="node-icon">🔎</div>
+                  <div class="node-label">Matcher</div>
+                  <div class="node-status-dot"></div>
+                </div>
+                <div class="graph-node" id="node-tailor">
+                  <div class="node-icon">👔</div>
+                  <div class="node-label">Tailor</div>
+                  <div class="node-status-dot"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Agent Terminal Logs -->
+            <div class="agent-terminal">
+              <div class="terminal-head">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title">agent_workflow_log.txt</span>
+              </div>
+              <div class="terminal-body" id="agentConsole">
+                <div class="console-line system">[System] Orchestrator idle. Paste/upload resume and click 'Run Agent'.</div>
+              </div>
+            </div>
+
+            <div class="actions agent-actions" style="margin-top: 6px;">
+              <button class="btn btn-primary" id="agentRunBtn">Run Agent</button>
+              <button class="btn btn-secondary" id="agentOpenBtn">Open Top 10</button>
+              <button class="btn btn-ghost" id="agentExportBtn">Export CSV</button>
+            </div>
+            <div id="agentStatus" class="muted small" style="margin-top: 8px; line-height: 1.45;">Agent is idle. Paste/upload resume and click 'Run Agent'.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- PAGE 2: CV BUILDER -->
+    <div id="page-editor" class="page-section">
+      <section class="panel card glass cv-editor-panel" id="masterCVEditorView" style="max-width: 800px; margin: 0 auto; padding: 32px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+          <h2 style="margin:0;">Edit Master CV</h2>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge" style="background:var(--primary); color:var(--primary-text); font-weight:bold;"><span id="completionPercent">0</span>% Complete</span>
+          </div>
+        </div>
+        <p class="muted small" style="margin-top:-4px; margin-bottom:12px;">Missing: <span id="missingFieldsList" style="font-weight:700; color:var(--accent);">None</span></p>
+        
+        <div class="progress-container" style="background:var(--surface-3); height:8px; border-radius:999px; overflow:hidden; margin-bottom:16px; border:1px solid var(--border);">
+          <div id="completionProgressBar" style="background:linear-gradient(90deg, var(--primary), var(--primary-2)); height:100%; width:0%; transition:width 0.3s ease;"></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <!-- Contact Details -->
+          <h3 style="margin: 0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px;">Contact Details</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Full Name *</label>
+              <input type="text" id="cvName" placeholder="Rohit Kumar Singh">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Email *</label>
+              <input type="email" id="cvEmail" placeholder="rohit@example.com">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Phone *</label>
+              <input type="text" id="cvPhone" placeholder="+91 9903031928">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Location *</label>
+              <input type="text" id="cvLocation" placeholder="Bangalore, India">
+            </div>
+          </div>
+
+          <!-- Social Profiles -->
+          <h3 style="margin-top:16px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px;">Social Profiles</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">LinkedIn URL</label>
+              <input type="text" id="cvLinkedin" placeholder="https://linkedin.com/in/username">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">GitHub URL</label>
+              <input type="text" id="cvGithub" placeholder="https://github.com/username">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">X (Twitter) URL</label>
+              <input type="text" id="cvTwitter" placeholder="https://x.com/username">
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Portfolio URL</label>
+              <input type="text" id="cvPortfolio" placeholder="https://username.dev">
+            </div>
+          </div>
+
+          <!-- Summary & Skills -->
+          <h3 style="margin-top:16px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px;">Summary & Skills</h3>
+          <div>
+            <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Professional Summary</label>
+            <textarea id="cvSummary" placeholder="Short description..." style="min-height:100px;"></textarea>
+          </div>
+          <div>
+            <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Skills Tags (comma separated)</label>
+            <input type="text" id="cvSkillsInput" placeholder="Reactjs, Node, Postgresql, Docker">
+          </div>
+
+          <!-- Education Section -->
+          <h3 style="margin-top:20px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Education Details</span>
+            <button type="button" class="btn btn-secondary" id="addEducationBtn" style="padding: 4px 12px; font-size:0.75rem; border-radius:8px; height:28px;">+ Add Education</button>
+          </h3>
+          <div id="educationListContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+
+          <!-- Work Experience Section -->
+          <h3 style="margin-top:20px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Work Experience</span>
+            <button type="button" class="btn btn-secondary" id="addExperienceBtn" style="padding: 4px 12px; font-size:0.75rem; border-radius:8px; height:28px;">+ Add Experience</button>
+          </h3>
+          <div id="experienceListContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+
+          <!-- Projects Section -->
+          <h3 style="margin-top:20px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Projects <span id="projectsWarning" style="color:var(--danger); font-size:0.75rem; font-weight:normal; margin-left:8px;">(⚠️ Min 2 projects required)</span></span>
+            <button type="button" class="btn btn-secondary" id="addProjectBtn" style="padding: 4px 12px; font-size:0.75rem; border-radius:8px; height:28px;">+ Add Project</button>
+          </h3>
+          <div id="projectsListContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+
+          <!-- Certifications Section -->
+          <h3 style="margin-top:20px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Certifications</span>
+            <button type="button" class="btn btn-secondary" id="addCertificationBtn" style="padding: 4px 12px; font-size:0.75rem; border-radius:8px; height:28px;">+ Add Certification</button>
+          </h3>
+          <div id="certificationsListContainer" style="display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+
+        <div class="actions" style="margin-top: 32px; justify-content: space-between; align-items: center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" id="aiFillCVBtn" style="font-weight:800; font-size:0.88rem;">&#10024; AI Fill Missing Sections</button>
+            <button class="btn btn-ghost" id="previewLatexFromCVBtn" style="font-size:0.88rem;">Preview LaTeX</button>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" id="skipCVBtn">Skip &amp; Set Nulls</button>
+            <button class="btn btn-primary" id="saveCVBtn">Save &amp; Continue &#8594;</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- PAGE 3: MATCHED JOBS -->
+    <div id="page-matches" class="page-section">
+      <div class="matches-grid">
+        <!-- Left: Filters -->
+        <section class="panel card glass filters-panel-standalone">
+          <h2>Filters</h2>
+          <div class="filter-grid-standalone">
+            <div><label>Role keywords</label><input id="roleKeywords" value="" placeholder="software engineer, frontend, developer"></div>
+            <div><label>Location</label><select id="location"><option value="" selected>Any</option><option value="India">India (all cities)</option><option>Remote</option><option>Bengaluru</option><option>Hyderabad</option><option>Pune</option><option>Chennai</option><option>Mumbai</option><option>Delhi</option></select></div>
+            <div><label>Mode</label><select id="mode"><option value="">Any</option><option>Remote</option><option>Hybrid</option><option>Onsite</option></select></div>
+            <div><label>Type</label><select id="jobType"><option value="">Any</option><option>Full-time</option><option>Internship</option><option>Apprenticeship</option><option>Contract</option></select></div>
+            <div><label>Posted within</label><select id="postedWithin"><option value="365">Any time</option><option value="30">30 days</option><option value="14">14 days</option><option value="7">7 days</option><option value="3">3 days</option></select></div>
+          </div>
+          <div class="checklist">
+            <label class="check"><input id="remoteOnly" type="checkbox"> Remote only</label>
+            <label class="check"><input id="fresherOnly" type="checkbox"> Entry-level software only</label>
+            <label class="check"><input id="trustedOnly" type="checkbox"> Trusted sources only</label>
+            <label class="check"><input id="mlMode" type="checkbox" checked> ML ranking mode</label>
+          </div>
+          <div class="actions" style="margin-top: 18px;">
+            <button class="btn btn-primary" id="applyFiltersBtn">Apply Filters</button>
+            <button class="btn btn-secondary" id="resetBtn">Reset</button>
+            <button class="btn btn-ghost" id="exportBtn">Export Identified Jobs</button>
+          </div>
+          <div class="chips" id="activeChips"></div>
+        </section>
+
+        <!-- Right: Results -->
+        <section class="panel card glass results-panel-standalone">
+          <div class="results-head">
+            <div>
+              <h2>Matched jobs</h2>
+              <p class="muted small" id="jobsFeedStatus">Loading job feed…</p>
+            </div>
+            <div class="toolbar">
+              <button class="btn btn-secondary" id="refreshJobsBtn" type="button">Refresh jobs</button>
+              <div class="sort-container">
+                <span class="sort-label">Sort by</span>
+                <select id="sortBy" class="select-sort">
+                  <option value="recent">Newest posted first</option>
+                  <option value="score" selected>Best match (then newest)</option>
+                  <option value="company">Company A-Z (then newest)</option>
+                </select>
+              </div>
+              <button class="btn btn-secondary" id="savedToggleBtn">Show saved only</button>
+            </div>
+          </div>
+          <div id="results" class="results-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- PAGE 4: TAILOR ASSISTANT -->
+    <div id="page-tailor" class="page-section">
+      <div class="tailor-grid">
+        <!-- Left Column: Selection and ATS analysis -->
+        <section class="panel card glass tailor-left-panel">
+          <h2>Tailor Assistant</h2>
+          <p class="muted small">Customize your resume achievements and summary with AI for a target job role.</p>
+          
+          <div style="margin: 12px 0 8px 0;">
+            <label style="font-weight:700; display:block; margin-bottom:6px; font-size:0.85rem;">Select Target Job</label>
+            <select id="tailorJobSelect">
+              <option value="">-- Choose a matched job --</option>
             </select>
           </div>
-          <button class="btn btn-secondary" id="savedToggleBtn">Show saved only</button>
-        </div>
+          
+          <div style="margin: 8px 0 14px 0; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface-2);">
+            <p class="muted tiny" style="margin:0; line-height: 1.45;">💡 <strong>Workflow Tip:</strong> Click <strong>"Open in Overleaf"</strong> to export LaTeX directly. Compile, download the PDF, and drag it into the box below to check ATS score and unlock apply links.</p>
+          </div>
+          
+          <!-- Selected Job Info -->
+          <div id="tailorJobDetails" class="tailor-job-details-card" hidden>
+            <h3 id="tailorJobTitle" style="margin:0 0 4px 0; font-size:1.15rem; letter-spacing:-0.02em;"></h3>
+            <p id="tailorJobCompany" class="muted small" style="margin:0 0 12px 0; font-weight:500;"></p>
+            
+            <div class="divider"></div>
+            
+            <h4 style="margin:12px 0 6px 0; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted)">ATS Keywords Alignment</h4>
+            <div id="tailorJobAts"></div>
+            
+            <div class="divider"></div>
+            
+            <h4 style="margin:12px 0 6px 0; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted)">Key highlights</h4>
+            <ul id="tailorJobHighlights" class="job-highlights" style="font-size:0.84rem; margin:0 0 16px 0; padding-left:16px; line-height:1.45;"></ul>
+            
+            <button class="btn btn-primary" id="generateTailoredResumeBtn" style="width:100%; margin-bottom:12px;">Tailor Resume using LLM</button>
+            
+            <!-- ATS Upload & Verification -->
+            <div class="divider" style="margin: 16px 0;"></div>
+            <div class="ats-verify-box" style="border: 2px dashed var(--border); border-radius:16px; padding:16px; background: color-mix(in oklab, var(--primary) 6%, var(--surface-2));">
+              <h4 style="margin:0 0 6px 0; font-size:0.85rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em;">ATS Verification Loop</h4>
+              <p class="muted tiny" style="margin:0 0 10px 0; line-height: 1.35;">Compile this LaTeX code on Overleaf, download the PDF, and upload it here to verify its ATS score >= 95%.</p>
+              
+              <input type="file" id="compiledPdfUpload" accept="application/pdf" style="font-size:0.8rem; margin-bottom:10px; border-radius:8px;">
+              <button class="btn btn-secondary" id="verifyPdfAtsBtn" style="width:100%; font-size:0.85rem; padding: 8px 12px; font-weight:700;">Verify Compiled PDF</button>
+              
+              <div id="atsVerificationStatus" style="margin-top:10px; text-align:center; font-weight:800; font-size:0.85rem;" hidden>
+                ATS Score: <span id="atsStatusScore" style="color:var(--accent);">0%</span> - <span id="atsStatusText">Pending Verification</span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="tailorNoJobMessage" class="empty">
+            <p>Please select a job from the dropdown or click "Tailor Resume" on any job card in the Matches tab to begin.</p>
+          </div>
+        </section>
+
+        <!-- Right Column: Premium Interactive A4 Resume Preview Sheet -->
+        <section class="panel card glass tailor-right-panel" style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; gap:8px; background:var(--surface-3); padding:4px; border-radius:999px; border:1px solid var(--border);">
+              <button class="btn btn-secondary active-tab-btn" id="viewResumeSheetBtn" style="padding: 6px 14px; font-size:0.82rem; border-radius:999px; border:none; height:32px;">A4 Preview</button>
+              <button class="btn btn-ghost" id="viewLatexCodeBtn" style="padding: 6px 14px; font-size:0.82rem; border-radius:999px; border:none; height:32px; color:var(--muted);">LaTeX Code</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-secondary" id="downloadTailoredBtn">Download Text</button>
+              <button class="btn btn-secondary" id="downloadLatexBtn">Download LaTeX</button>
+              <button class="btn btn-primary" id="openOverleafBtn" style="font-weight:800;">Open in Overleaf</button>
+              <button class="btn btn-ghost" id="printTailoredBtn">Print</button>
+            </div>
+          </div>
+          
+          <div class="resume-sheet-container">
+            <!-- A4 Preview -->
+            <div id="resumeSheet" class="resume-sheet">
+              <!-- Loading Overlay -->
+              <div id="resumeSheetLoader" class="resume-sheet-loader" hidden>
+                <div class="spinner"></div>
+                <p id="loaderMessage">Agent is tailoring your resume...</p>
+              </div>
+              
+              <div class="resume-header">
+                <h1 id="resumeSheetName" class="resume-name">Candidate Name</h1>
+                <p id="resumeSheetContact" class="resume-contact">Email · Phone · Location</p>
+              </div>
+              
+              <div class="resume-section" id="resumeSheetSummarySection">
+                <h2 class="resume-section-title">Professional Summary</h2>
+                <p id="resumeSheetSummary" class="resume-summary">Select a job and run the Tailor Agent to generate a customized profile summary.</p>
+              </div>
+              
+              <div class="resume-section" id="resumeSheetSkillsSection">
+                <h2 class="resume-section-title">Skills & Keywords</h2>
+                <div id="resumeSheetSkills" class="resume-skills-tags"></div>
+              </div>
+              
+              <div class="resume-section" id="resumeSheetExperienceSection">
+                <h2 class="resume-section-title">Professional Experience</h2>
+                <div id="resumeSheetExperience" class="resume-experience-list">
+                  <!-- Experience bullets will render dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- LaTeX Code Area View (Hidden by default) -->
+            <div id="latexCodeView" style="display:none; width:100%; text-align:left;" hidden>
+              <textarea id="latexCodeArea" style="width:100%; height:880px; font-family:monospace; font-size:0.8rem; background:#090c10; color:#c9d1d9; border:1px solid var(--border); border-radius:12px; padding:16px; resize:none;" readonly placeholder="Compile your resume first to view structured LaTeX code..."></textarea>
+              <button class="btn btn-primary" id="copyLatexBtn" style="margin-top:12px; width:100%;">Copy LaTeX Code</button>
+            </div>
+          </div>
+        </section>
       </div>
-      <div id="results" class="results-list"></div>
-    </section>
+    </div>
   </main>
+
+  <!-- Not Qualified Warning Modal (score < 95%) -->
+  <div id="notQualifiedModal" class="modal-backdrop" hidden>
+    <div class="modal-card card glass" style="max-width:460px; text-align:center;">
+      <div style="font-size:3rem; margin-bottom:8px;">⚠️</div>
+      <h3 style="margin:0 0 6px 0; color:var(--accent); font-size:1.3rem;">Resume Not Qualified</h3>
+      <p class="muted small" style="margin:0 0 16px 0; line-height:1.55;">
+        Your resume has a <strong><span id="nqScore">0</span>% match</strong> for this role —
+        below the recommended <strong>95%</strong> threshold.<br>
+        <span style="font-size:0.85rem; color:var(--muted); margin-top:6px; display:block;" id="nqRole"></span>
+      </p>
+      <div style="background: color-mix(in oklab, var(--accent) 10%, var(--surface-2)); border:1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius:14px; padding:12px 16px; margin-bottom:20px; text-align:left;">
+        <p style="margin:0; font-size:0.84rem; line-height:1.5;">
+          💡 We recommend tailoring your resume first to increase your match score and maximize your chances of getting shortlisted.
+        </p>
+      </div>
+      <p style="font-weight:800; font-size:0.95rem; margin:0 0 16px 0;">Still want to proceed anyway?</p>
+      <div class="actions" style="justify-content:center; gap:12px;">
+        <button class="btn btn-secondary" id="nqTailorBtn" style="flex:1; font-weight:800;">
+          🎯 No — Tailor My Resume
+        </button>
+        <button class="btn btn-ghost" id="nqProceedBtn" style="flex:1; color:var(--muted); border-color:var(--border);">
+          Yes, Apply Anyway →
+        </button>
+      </div>
+      <button onclick="closeNotQualifiedModal()" style="background:none; border:none; color:var(--muted); font-size:0.8rem; cursor:pointer; margin-top:12px; text-decoration:underline;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Apply Prompt Modal -->
+  <div id="applyPromptModal" class="modal-backdrop" hidden>
+    <div class="modal-card card glass">
+      <h3>Apply via Custom Agent Prompt</h3>
+      <p class="muted small">Customize a short application pitch letter or statement to show why you match this role:</p>
+      <div style="margin: 14px 0;">
+        <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Target Role & Company</label>
+        <div id="modalJobInfo" style="font-weight:700; color:var(--primary-2); margin-bottom:12px;">Software Engineer at Google</div>
+        <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Tailored Application Pitch Note</label>
+        <textarea id="applyPromptInput" style="min-height:90px;"></textarea>
+      </div>
+      <div class="actions" style="justify-content: flex-end;">
+        <button class="btn btn-secondary" id="closeApplyModalBtn">Cancel</button>
+        <button class="btn btn-primary" id="confirmApplyBtn">Proceed & Apply on Source</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden form for Overleaf API compilation -->
+  <form id="overleafForm" action="https://www.overleaf.com/docs" method="POST" target="_blank" style="display:none;">
+    <textarea name="snip" id="overleafSnip"></textarea>
+  </form>
 
   <script src="./vendor/pdf.min.js"></script>
   <script>

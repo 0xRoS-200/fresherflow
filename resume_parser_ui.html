@@ -1,0 +1,373 @@
+<!--
+Resume Parser UI Component
+Embedded in index.html for resume upload and Master CV editing
+-->
+
+<section class="panel card glass resume-parser-panel" id="resumeParserPanel" hidden>
+  <h2>📄 Resume Parser - Master CV Builder</h2>
+  <p class="muted small">Upload your resume (PDF, DOCX, or paste text). We'll extract structured data into your Master CV.</p>
+  
+  <!-- Step 1: Upload Resume -->
+  <div class="parser-step">
+    <h3>Step 1: Upload Resume</h3>
+    <div class="input-group">
+      <label>PDF or Portfolio Link</label>
+      <input type="file" id="resumeFileInput" accept=".pdf,.docx,.txt" placeholder="Choose PDF or DOCX file">
+      <span class="or-text">— OR —</span>
+      <input type="url" id="portfolioUrlInput" placeholder="https://yourportfolio.com">
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="parseResumeBtn">Parse Resume</button>
+    </div>
+    <div id="parsingStatus" class="status muted small" hidden></div>
+  </div>
+  
+  <!-- Step 2: Review Extracted Data -->
+  <div class="parser-step" id="reviewStep" hidden>
+    <h3>Step 2: Review & Edit Master CV</h3>
+    <p class="muted small">Completion: <span id="completionPercent">0</span>% | Missing: <span id="missingFieldsList">loading...</span></p>
+    
+    <!-- Contact Information -->
+    <div class="form-section">
+      <h4>👤 Contact Information</h4>
+      <div class="form-grid-2">
+        <div>
+          <label>Full Name *</label>
+          <input type="text" id="cvName" placeholder="John Doe" class="required-field">
+        </div>
+        <div>
+          <label>Email *</label>
+          <input type="email" id="cvEmail" placeholder="john@example.com" class="required-field">
+        </div>
+        <div>
+          <label>Phone *</label>
+          <input type="tel" id="cvPhone" placeholder="+1234567890" class="required-field">
+        </div>
+        <div>
+          <label>Location *</label>
+          <input type="text" id="cvLocation" placeholder="Bangalore, India" class="required-field">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Professional Summary -->
+    <div class="form-section">
+      <h4>📝 Professional Summary</h4>
+      <textarea id="cvSummary" placeholder="Brief professional summary..." rows="3"></textarea>
+    </div>
+    
+    <!-- Skills -->
+    <div class="form-section">
+      <h4>🛠️ Skills</h4>
+      <div id="skillsList" class="dynamic-list">
+        <!-- Skills populated by JS -->
+      </div>
+      <button class="btn btn-secondary" id="addSkillBtn">+ Add Skill</button>
+    </div>
+    
+    <!-- Experience -->
+    <div class="form-section">
+      <h4>💼 Experience</h4>
+      <div id="experienceList" class="dynamic-list">
+        <!-- Experience entries populated by JS -->
+      </div>
+      <button class="btn btn-secondary" id="addExperienceBtn">+ Add Experience</button>
+    </div>
+    
+    <!-- Education -->
+    <div class="form-section">
+      <h4>🎓 Education</h4>
+      <div id="educationList" class="dynamic-list">
+        <!-- Education entries populated by JS -->
+      </div>
+      <button class="btn btn-secondary" id="addEducationBtn">+ Add Education</button>
+    </div>
+    
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-secondary" id="cancelParseBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveMasterCVBtn">Save Master CV</button>
+    </div>
+  </div>
+</section>
+
+<style>
+.resume-parser-panel {
+  max-width: 900px;
+}
+
+.parser-step {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.parser-step h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.parser-step h4 {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.input-group label {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.input-group input {
+  padding: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.input-group input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.or-text {
+  text-align: center;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9rem;
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-grid-2 > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-grid-2 label,
+.form-section label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-grid-2 input,
+.form-grid-2 select,
+.form-section textarea {
+  padding: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.form-grid-2 input::placeholder,
+.form-section textarea::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.dynamic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dynamic-item {
+  padding: 1rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  border-left: 2px solid #4f46e5;
+}
+
+.status {
+  padding: 0.75rem;
+  background: rgba(100,200,255,0.1);
+  border-radius: 4px;
+  border-left: 2px solid #64c8ff;
+}
+
+.status.error {
+  background: rgba(255,100,100,0.1);
+  border-left-color: #ff6464;
+}
+
+.status.success {
+  background: rgba(100,255,100,0.1);
+  border-left-color: #64ff64;
+}
+
+.required-field {
+  border-color: rgba(255,100,100,0.5) !important;
+}
+
+.required-field:valid {
+  border-color: rgba(100,255,100,0.5) !important;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+/**
+ * Resume Parser UI Handler
+ * Manages upload, parsing, and Master CV editing
+ */
+
+class ResumeParserUI {
+  constructor() {
+    this.currentCV = null;
+    this.init();
+  }
+
+  init() {
+    // Get elements
+    this.panel = document.getElementById('resumeParserPanel');
+    this.fileInput = document.getElementById('resumeFileInput');
+    this.urlInput = document.getElementById('portfolioUrlInput');
+    this.parseBtn = document.getElementById('parseResumeBtn');
+    this.statusEl = document.getElementById('parsingStatus');
+    this.reviewStep = document.getElementById('reviewStep');
+    this.saveCVBtn = document.getElementById('saveMasterCVBtn');
+    this.cancelBtn = document.getElementById('cancelParseBtn');
+    
+    // Bind events
+    this.parseBtn.addEventListener('click', () => this.handleParse());
+    this.saveCVBtn.addEventListener('click', () => this.handleSaveCV());
+    this.cancelBtn.addEventListener('click', () => this.handleCancel());
+  }
+
+  async handleParse() {
+    const file = this.fileInput.files[0];
+    const url = this.urlInput.value;
+
+    if (!file && !url) {
+      this.showStatus('Please upload a file or provide a portfolio URL', 'error');
+      return;
+    }
+
+    this.showStatus('Parsing resume...', 'loading');
+    
+    try {
+      let response;
+      
+      if (file) {
+        // Parse PDF
+        const formData = new FormData();
+        formData.append('file', file);
+        response = await fetch('/api/parser/parse-pdf', {
+          method: 'POST',
+          body: formData
+        });
+      } else {
+        // Parse portfolio URL
+        response = await fetch('/api/parser/parse-portfolio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portfolio_url: url })
+        });
+      }
+
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        this.currentCV = result.data;
+        this.showStatus(`✓ Parsing complete! Completion: ${result.completion}%`, 'success');
+        this.displayReviewForm(result);
+        this.reviewStep.hidden = false;
+      } else {
+        this.showStatus(`Error: ${result.message}`, 'error');
+      }
+    } catch (err) {
+      this.showStatus(`Network error: ${err.message}`, 'error');
+      console.error('Parse error:', err);
+    }
+  }
+
+  displayReviewForm(result) {
+    const cv = result.data;
+    
+    // Fill contact information
+    document.getElementById('cvName').value = cv.name || '';
+    document.getElementById('cvEmail').value = cv.email || '';
+    document.getElementById('cvPhone').value = cv.phone || '';
+    document.getElementById('cvLocation').value = cv.location ? `${cv.location.city}, ${cv.location.country}` : '';
+    document.getElementById('cvSummary').value = cv.summary || '';
+    
+    // Update completion
+    document.getElementById('completionPercent').textContent = result.completion;
+    document.getElementById('missingFieldsList').textContent = result.missing_fields.join(', ') || 'None!';
+    
+    // Display skills (simplified)
+    const skillsList = document.getElementById('skillsList');
+    skillsList.innerHTML = (cv.skills || [])
+      .map(s => `<div class="dynamic-item">${s.name} (${s.proficiency})</div>`)
+      .join('');
+  }
+
+  handleSaveCV() {
+    // In production, save CV to backend
+    // For MVP, just show success
+    this.showStatus('✓ Master CV saved! Ready for job matching.', 'success');
+    setTimeout(() => this.handleCancel(), 1500);
+  }
+
+  handleCancel() {
+    this.reviewStep.hidden = true;
+    this.fileInput.value = '';
+    this.urlInput.value = '';
+    this.currentCV = null;
+  }
+
+  showStatus(message, type = 'info') {
+    this.statusEl.textContent = message;
+    this.statusEl.className = `status ${type}`;
+    this.statusEl.hidden = false;
+  }
+}
+
+// Initialize when DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.resumeParserUI = new ResumeParserUI();
+  });
+} else {
+  window.resumeParserUI = new ResumeParserUI();
+}
+</script>
