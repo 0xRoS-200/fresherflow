@@ -282,6 +282,19 @@ Return ONLY the JSON object, no other text.
         return cv
 
 
+def invoke_llm_with_fallback(system_message: str, prompt_message: str, temperature: float = 0.7) -> str:
+    """Helper wrapper for serve.py to invoke LLM with fallback and return text content."""
+    from langchain_core.messages import SystemMessage, HumanMessage
+    from llm_provider import invoke_with_fallback
+    
+    messages = [
+        SystemMessage(content=system_message),
+        HumanMessage(content=prompt_message)
+    ]
+    _, response = invoke_with_fallback(messages)
+    return response.content
+
+
 # Example usage
 if __name__ == "__main__":
     parser_agent = ParserAgent()
