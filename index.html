@@ -6,7 +6,25 @@
   <title>FresherFlow - Multi-Agent AI Resume Parser & Tailor Assistant</title>
   <meta name="description" content="Sleek, multi-agent AI resume parsing, ATS job matching, and LLM-driven resume tailoring assistant for tech candidates.">
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap">
   <link rel="stylesheet" href="./styles.css">
+  <style>
+    /* GPU-safe progress bar: scaleX avoids layout triggers */
+    #completionProgressBar {
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      height: 100%;
+      width: 100%;             /* fill parent fully */
+      transform: scaleX(0);    /* start at 0 via transform */
+      transform-origin: left center;
+      will-change: transform;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* Smooth page-section transitions */
+    .page-section { contain: layout style; }
+    /* GPU promote sticky panels */
+    .filters-panel-standalone,
+    .tailor-left-panel { will-change: transform; }
+  </style>
 </head>
 <body>
   <div id="protocolWarning" class="protocol-warning" hidden>
@@ -47,23 +65,15 @@
 
       <div class="parse-grid">
         <!-- Left: Upload/Paste -->
-        <section class="panel card glass" id="profileInputView">
+        <section class="panel card glass" id="profileInputView" style="display: flex; flex-direction: column; height: 100%; position: relative;">
           <h2>Candidate profile</h2>
           <label>Option A: Upload resume (PDF, DOCX, TXT, MD)</label>
-          <input id="resumeFile" type="file">
+          <input id="resumeFile" type="file" style="margin-bottom: 12px;">
           
-          <div class="divider"></div>
+          <div class="divider" style="margin: 8px 0 16px 0;"></div>
           
-          <label>Option B: Scrape Portfolio Website (Selenium scraper)</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <input type="text" id="portfolioUrl" placeholder="e.g. https://myportfolio.com" style="flex: 1; border-radius: 16px;">
-            <button class="btn btn-primary" id="portfolioScrapeBtn" style="padding: 0 16px; border-radius: 16px; font-weight:800; font-size:0.85rem;">Scrape Link</button>
-          </div>
-          
-          <div class="divider"></div>
-          
-          <label>Option C: Paste resume text / skills</label>
-          <textarea id="resumeText" placeholder="Paste resume text here..."></textarea>
+          <label style="margin-bottom: 8px; display: block;">Option B: Paste resume text / skills</label>
+          <textarea id="resumeText" placeholder="Paste resume text here..." style="flex: 1; min-height: 250px; margin-bottom: 16px; resize: none;"></textarea>
           <div class="actions">
             <button class="btn btn-secondary" id="clearProfileBtn">Clear Profile</button>
           </div>
@@ -143,7 +153,7 @@
         <p class="muted small" style="margin-top:-4px; margin-bottom:12px;">Missing: <span id="missingFieldsList" style="font-weight:700; color:var(--accent);">None</span></p>
         
         <div class="progress-container" style="background:var(--surface-3); height:8px; border-radius:999px; overflow:hidden; margin-bottom:16px; border:1px solid var(--border);">
-          <div id="completionProgressBar" style="background:linear-gradient(90deg, var(--primary), var(--primary-2)); height:100%; width:0%; transition:width 0.3s ease;"></div>
+          <div id="completionProgressBar"></div>
         </div>
 
         <div style="display:flex; flex-direction:column; gap:16px;">
@@ -198,6 +208,31 @@
           <div>
             <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Skills Tags (comma separated)</label>
             <input type="text" id="cvSkillsInput" placeholder="Reactjs, Node, Postgresql, Docker">
+          </div>
+
+
+          <!-- Profile Categorization & Achievements -->
+          <h3 style="margin-top:16px; margin-bottom:0; font-size:1.05rem; border-bottom:1px solid var(--border); padding-bottom:6px;">Profile Categorization & Achievements</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Profile Type *</label>
+              <select id="cvProfileType" class="select-sort" style="width:100% !important; border:1px solid var(--border) !important; border-radius:16px !important; padding:8px 12px !important; background:var(--surface-2) !important;">
+                <option value="fresher">Fresher (< 1 year experience)</option>
+                <option value="experienced">Experienced (>= 1 year experience)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Total Experience (Years)</label>
+              <input type="number" step="0.1" id="cvTotalExperienceYears" placeholder="e.g. 2.5">
+            </div>
+            <div style="grid-column: span 2;">
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Target Role *</label>
+              <input type="text" id="cvTargetRole" placeholder="e.g. Software Engineer Intern">
+            </div>
+            <div style="grid-column: span 2;">
+              <label style="font-size:0.8rem; font-weight:700; display:block; margin-bottom:4px;">Achievements</label>
+              <textarea id="cvAchievements" placeholder="List your awards, hackathon wins, honors (comma or newline separated)..." style="min-height:80px;"></textarea>
+            </div>
           </div>
 
           <!-- Education Section -->
@@ -367,39 +402,19 @@
           
           <div class="resume-sheet-container">
             <!-- A4 Preview -->
-            <div id="resumeSheet" class="resume-sheet">
+            <div id="resumeSheet" class="resume-sheet" style="padding: 0; display: flex; flex-direction: column; overflow: hidden; height: 1000px; background: transparent; box-shadow: none;">
               <!-- Loading Overlay -->
-              <div id="resumeSheetLoader" class="resume-sheet-loader" hidden>
+              <div id="resumeSheetLoader" class="resume-sheet-loader" style="background: rgba(15, 23, 42, 0.85);" hidden>
                 <div class="spinner"></div>
-                <p id="loaderMessage">Agent is tailoring your resume...</p>
+                <p id="loaderMessage" style="font-weight: 700; color: #f8fafc;">Compiling PDF preview...</p>
               </div>
-              
-              <div class="resume-header">
-                <h1 id="resumeSheetName" class="resume-name">Candidate Name</h1>
-                <p id="resumeSheetContact" class="resume-contact">Email · Phone · Location</p>
-              </div>
-              
-              <div class="resume-section" id="resumeSheetSummarySection">
-                <h2 class="resume-section-title">Professional Summary</h2>
-                <p id="resumeSheetSummary" class="resume-summary">Select a job and run the Tailor Agent to generate a customized profile summary.</p>
-              </div>
-              
-              <div class="resume-section" id="resumeSheetSkillsSection">
-                <h2 class="resume-section-title">Skills & Keywords</h2>
-                <div id="resumeSheetSkills" class="resume-skills-tags"></div>
-              </div>
-              
-              <div class="resume-section" id="resumeSheetExperienceSection">
-                <h2 class="resume-section-title">Professional Experience</h2>
-                <div id="resumeSheetExperience" class="resume-experience-list">
-                  <!-- Experience bullets will render dynamically -->
-                </div>
-              </div>
+              <!-- PDF Viewer Frame -->
+              <iframe id="pdfPreviewFrame" style="width: 100%; height: 1000px; border: none; border-radius: 12px; background: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.25);" src=""></iframe>
             </div>
 
             <!-- LaTeX Code Area View (Hidden by default) -->
             <div id="latexCodeView" style="display:none; width:100%; text-align:left;" hidden>
-              <textarea id="latexCodeArea" style="width:100%; height:880px; font-family:monospace; font-size:0.8rem; background:#090c10; color:#c9d1d9; border:1px solid var(--border); border-radius:12px; padding:16px; resize:none;" readonly placeholder="Compile your resume first to view structured LaTeX code..."></textarea>
+              <textarea id="latexCodeArea" style="width:100%; height:880px; font-family:monospace; font-size:0.8rem; background:#090c10; color:#c9d1d9; border:1px solid var(--border); border-radius:12px; padding:16px; resize:none; will-change:transform; -webkit-overflow-scrolling:touch;" readonly placeholder="Compile your resume first to view structured LaTeX code..."></textarea>
               <button class="btn btn-primary" id="copyLatexBtn" style="margin-top:12px; width:100%;">Copy LaTeX Code</button>
             </div>
           </div>

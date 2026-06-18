@@ -216,6 +216,64 @@ def test_validation():
     
     return True
 
+def test_reconstruct_fallback():
+    """Test fallback of _reconstruct_cv under empty/null/missing LLM outputs"""
+    print_section("Test 7: Reconstruct Fallback & Robustness")
+    
+    agent = ParserAgent()
+    
+    # Create basic CV that was extracted by heuristics
+    basic_cv = MasterCV(
+        name="Rohit Kumar Singh",
+        email="rohit@example.com",
+        phone="9876543210",
+        location=Location(city="Delhi", country="India"),
+        skills=[Skill(name="Python", proficiency="expert", category="technical")]
+    )
+    
+    # Simulate LLM output where name, email, phone, location and lists are null or missing
+    null_llm_data = {
+        "name": None,
+        "email": None,
+        "phone": None,
+        "location": None,
+        "skills": None,
+        "experience": None,
+        "education": None,
+        "projects": None,
+        "certifications": None,
+        "socialLinks": None
+    }
+    
+    try:
+        cv = agent._reconstruct_cv(null_llm_data, basic_cv)
+        print("[OK] Reconstructed CV successfully with null LLM data")
+        
+        # Verify fallback values
+        if cv.name != "Rohit Kumar Singh":
+            print(f"[FAIL] Expected fallback name 'Rohit Kumar Singh', got '{cv.name}'")
+            return False
+        if cv.email != "rohit@example.com":
+            print(f"[FAIL] Expected fallback email 'rohit@example.com', got '{cv.email}'")
+            return False
+        if cv.phone != "9876543210":
+            print(f"[FAIL] Expected fallback phone '9876543210', got '{cv.phone}'")
+            return False
+        if cv.location.city != "Delhi" or cv.location.country != "India":
+            print(f"[FAIL] Expected location 'Delhi, India', got '{cv.location.city}, {cv.location.country}'")
+            return False
+        if not cv.skills or cv.skills[0].name != "Python":
+            print("[FAIL] Skills did not fall back to basic_cv skills")
+            return False
+            
+        print("[OK] Verified fallback values are correctly mapped from basic_cv")
+        return True
+    except Exception as e:
+        print(f"[FAIL] Failed to reconstruct CV with null LLM data: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def run_all_tests():
     """Run all tests"""
     print_section("FresherFlow Parser Agent - Test Suite")
@@ -228,6 +286,7 @@ def run_all_tests():
         ("Master CV Schema", test_master_cv_schema),
         ("LLM Parsing", test_llm_parsing),
         ("Field Validation", test_validation),
+        ("Reconstruct Fallback", test_reconstruct_fallback),
     ]
     
     results = []

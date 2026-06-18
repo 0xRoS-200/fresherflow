@@ -20,7 +20,6 @@ python-docx==0.8.11
 reportlab==4.0.7
 
 # Web Scraping
-selenium==4.15.2
 beautifulsoup4==4.12.2
 requests==2.31.0
 

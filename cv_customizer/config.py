@@ -74,10 +74,6 @@ class ExternalAPIs:
     LINKEDIN_API_KEY = os.getenv("LINKEDIN_API_KEY")
     INDEED_API_KEY = os.getenv("INDEED_API_KEY")
 
-    # Selenium
-    SELENIUM_HEADLESS = os.getenv("SELENIUM_HEADLESS", "True").lower() == "true"
-    SELENIUM_BROWSER = os.getenv("SELENIUM_BROWSER", "chrome")
-
 
 class MasterCVSchema:
     """Master CV template with all fields"""

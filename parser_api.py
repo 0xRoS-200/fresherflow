@@ -126,7 +126,7 @@ def validate_cv():
 @parser_bp.route('/parse-portfolio', methods=['POST'])
 def parse_portfolio():
     """
-    Parse resume from portfolio URL (requires Selenium)
+    Parse resume from portfolio URL
     
     Request:
     {

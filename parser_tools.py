@@ -95,9 +95,12 @@ class ContactInfoExtractor:
         ]
         
         for pattern in patterns:
-            match = re.search(pattern, text)
-            if match:
-                return match.group(0)
+            for match in re.finditer(pattern, text):
+                val = match.group(0)
+                # Ensure the matched string has at least 10 digits
+                digits = "".join(c for c in val if c.isdigit())
+                if len(digits) >= 10:
+                    return val
         return None
     
     @staticmethod

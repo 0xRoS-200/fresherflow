@@ -34,7 +34,7 @@ class PortfolioScraper:
         
         Args:
             url: Portfolio URL
-            headless: Run browser in headless mode
+            headless: Run browser in headless mode (ignored, Selenium removed)
             
         Returns:
             ScrapingResult with extracted content
@@ -45,82 +45,9 @@ class PortfolioScraper:
         logger.info(f"Scraping portfolio: {url}")
 
         try:
-            # Try Selenium first (for JavaScript-heavy sites)
-            return cls._scrape_with_selenium(url, headless)
+            return cls._scrape_with_beautifulsoup(url)
         except ImportError:
-            logger.warning("Selenium not available, trying BeautifulSoup")
-            try:
-                return cls._scrape_with_beautifulsoup(url)
-            except ImportError:
-                raise RuntimeError("No scraping libraries available")
-
-    @classmethod
-    def _scrape_with_selenium(
-        cls, url: str, headless: bool = True
-    ) -> ScrapingResult:
-        """Scrape using Selenium (handles JavaScript)"""
-        try:
-            from selenium import webdriver
-            from selenium.webdriver.common.by import By
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
-            from selenium.webdriver.chrome.options import Options
-
-            chrome_options = Options()
-            if headless:
-                chrome_options.add_argument("--headless")
-            chrome_options.add_argument(f"user-agent={cls.USER_AGENT}")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-
-            driver = webdriver.Chrome(options=chrome_options)
-            try:
-                driver.set_page_load_timeout(cls.TIMEOUT)
-                driver.get(url)
-
-                # Wait for page to load
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_all_elements_located((By.TAG_NAME, "body"))
-                )
-
-                # Extract page title
-                title = driver.title
-
-                # Get page content
-                content = driver.page_source
-                
-                # Extract text
-                text_element = driver.find_element(By.TAG_NAME, "body")
-                text = text_element.text if text_element else ""
-
-                logger.info(f"Scraped {len(text)} chars from {url}")
-
-                sections = cls._extract_sections_from_text(text)
-
-                return ScrapingResult(
-                    content=content,
-                    url=url,
-                    title=title,
-                    sections=sections,
-                    extraction_method="selenium",
-                    confidence=0.90,
-                )
-            finally:
-                driver.quit()
-
-        except ImportError:
-            raise
-        except Exception as e:
-            logger.error(f"Selenium scraping failed: {e}")
-            return ScrapingResult(
-                content="",
-                url=url,
-                title="",
-                sections={},
-                extraction_method="selenium",
-                confidence=0.0,
-                error=str(e),
-            )
+            raise RuntimeError("BeautifulSoup is not available")
 
     @classmethod
     def _scrape_with_beautifulsoup(cls, url: str) -> ScrapingResult:

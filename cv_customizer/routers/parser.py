@@ -29,7 +29,7 @@ async def upload_resume(file: UploadFile = File(...)):
 async def parse_portfolio(portfolio_url: str):
     """Parse portfolio website to extract CV data"""
     try:
-        # TODO: Implement web scraping with Selenium
+        # TODO: Implement web scraping
         return {
             "status": "pending",
             "message": "Portfolio scraper will process this URL",
