@@ -6,6 +6,7 @@ Handles resume upload and parsing
 from flask import Blueprint, request, jsonify
 import os
 import tempfile
+import json
 from parser_agent import ParserAgent
 from master_cv import MasterCV
 
@@ -51,7 +52,6 @@ def parse_pdf():
             # Get optional user input
             user_input = None
             if request.form.get('user_input'):
-                import json
                 user_input = json.loads(request.form.get('user_input'))
             
             # Parse PDF

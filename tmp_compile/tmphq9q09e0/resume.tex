@@ -1,0 +1,160 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[utf8]{inputenc}
+\usepackage{ragged2e}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Custom commands
+\newcommand{\resumeItem}[1]{\item\small{#1 \vspace{-2pt}}}
+\newcommand{\resumeSubheading}[4]{\vspace{-2pt}\item\begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}\textbf{#1} & #2 \\\textit{\small#3} & \textit{\small #4} \\\end{tabular*}\vspace{-7pt}}
+\newcommand{\resumeProjectHeading}[2]{\vspace{-2pt}\item\begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}\small#1 & #2 \\\end{tabular*}\vspace{-7pt}}
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+% Escape special characters
+\newcommand{\escapedHash}{\#}
+\newcommand{\escapedDollar}{\$}
+\newcommand{\escapedPercent}{\%}
+\newcommand{\escapedAmpersand}{\&}
+\newcommand{\escapedUnderscore}{\_}
+\newcommand{\escapedTilde}{\textasciitilde{}}
+\newcommand{\escapedCaret}{\textasciicircum{}}
+\newcommand{\escapedBackslash}{\textbackslash{}}
+\newcommand{\escapedBraceOpen}{\{}
+\newcommand{\escapedBraceClose}{\}}
+
+\begin{document}
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge \scshape Jane Doe} \\ \vspace{1pt}
+    \small +91-9876543210 $|$ \href{mailto:jane.doe@example.com}{jane.doe@example.com} $|$ Bangalore, India \\
+    \href{https://linkedin.com/in/janedoe-example}{linkedin.com/in/janedoe-example} $|$ \href{https://github.com/janedoe}{github.com/janedoe}
+    \vspace{-8pt}
+\end{center}
+
+%-----------SUMMARY-----------
+\section{Summary}
+\resumeSubHeadingListStart
+    \resumeItem{Experienced Software Engineer with 2.5 years driving robust backend systems and DevOps for high-throughput SaaS applications. Proven expertise in \textbf{cloud} infrastructure, \textbf{Kubernetes}, and \textbf{system design}, focused on enhancing \textbf{performance} and \textbf{cost efficiency}. Adept at \textbf{collaboration} and \textbf{leadership} in fast-paced environments, committed to \textbf{engineering discipline} and \textbf{platform reliability} for delivering scalable solutions.}
+\resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------
+\section{Experience}
+\resumeSubHeadingListStart
+    \resumeSubheading
+      {TechSolutions Corp}{June 2024 -- Present}
+      {Software Engineer}{Bangalore, India}
+      \resumeItemListStart
+        \resumeItem{Spearheaded the design and \textbf{architecture} of scalable backend services using Go and \textbf{Python}, improving system \textbf{performance} and \textbf{reliability} for enterprise SaaS applications.}
+        \resumeItem{\textbf{Implemented} and managed \textbf{DevOps} pipelines with \textbf{Kubernetes}, \textbf{Docker}, and \textbf{AWS}, automating deployments and reducing release cycles by 20\%.}
+        \resumeItem{\textbf{Optimized} \textbf{cloud} resource utilization and \textbf{governance} strategies, \textbf{driving} \textbf{finops} initiatives that reduced infrastructure \textbf{cost efficiency} by 15\% while maintaining high availability.}
+        \resumeItem{\textbf{Collaborated} with cross-functional teams to \textbf{define} \textbf{kpis} and \textbf{engineering discipline} standards, ensuring \textbf{code excellence} and seamless integration of new features.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {InnovateTech Labs}{June 2023 -- December 2023}
+      {Software Engineer Intern}{Bangalore, India}
+      \resumeItemListStart
+        \resumeItem{\textbf{Developed} and \textbf{implemented} responsive user interfaces using React and TypeScript, enhancing user experience and engagement for key product features.}
+        \resumeItem{Contributed to full-stack feature development, integrating Node.js backend APIs with PostgreSQL databases to support new functionalities.}
+        \resumeItem{Utilized \textbf{Git} for version control and \textbf{collaboration} within an agile development team, ensuring efficient code delivery and review processes.}
+        \resumeItem{Participated in \textbf{system design} discussions and code reviews, \textbf{applying} best practices to improve code quality and maintainability.}
+      \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------
+\section{Projects}
+\resumeSubHeadingListStart
+    \resumeProjectHeading
+        {\textbf{Cloud-Scale Microservices Platform} $|$ \emph{Go, Kubernetes, AWS, Prometheus}}{}
+        \resumeItemListStart
+            \resumeItem{\textbf{Architected} a \textbf{cloud}-native microservices platform using Go and \textbf{Kubernetes} on \textbf{AWS}, enabling automated database provisioning and scaling.}
+            \resumeItem{\textbf{Designed} and \textbf{implemented} a robust telemetry system with Prometheus, providing real-time monitoring and \textbf{performance} insights for critical services.}
+            \resumeItem{\textbf{Developed} \textbf{governance} policies for resource allocation and access control within the \textbf{Kubernetes} cluster, ensuring secure and efficient operations.}
+        \resumeItemListEnd
+    \resumeProjectHeading
+        {\textbf{AI-Powered Resume Screener} $|$ \emph{Python, FastAPI, OpenAI API, PostgreSQL}}{}
+        \resumeItemListStart
+            \resumeItem{\textbf{Built} an \textbf{AI}-powered resume parsing engine using \textbf{Python} and FastAPI, leveraging OpenAI API for intelligent content extraction and analysis, incorporating \textbf{machine learning} principles.}
+            \resumeItem{\textbf{Designed} a scoring algorithm to match resume content against job descriptions, improving recruitment efficiency by 30\%.}
+            \resumeItem{Integrated PostgreSQL for secure storage and retrieval of parsed resume data, ensuring data integrity and scalability.}
+        \resumeItemListEnd
+    \resumeProjectHeading
+        {\textbf{Automated Testing \& CI/CD Pipeline} $|$ \emph{Python, Docker, Jenkins, Shell scripting}}{}
+        \resumeItemListStart
+            \resumeItem{\textbf{Built} an automated \textbf{CI/CD pipeline} using Jenkins and \textbf{Docker}, streamlining the compilation and deployment of LaTeX documents.}
+            \resumeItem{\textbf{Developed} \textbf{Python} scripts and \textbf{shell} scripts to automate integration tests, reducing manual testing effort by 40\% and improving \textbf{engineering discipline}.}
+            \resumeItem{Integrated \textbf{Git} hooks to trigger automated builds and tests upon code commits, ensuring continuous quality assurance and faster feedback loops.}
+        \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+%-----------SKILLS-----------
+\section{Skills}
+\begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item
+    \textbf{Languages}{: Python, JavaScript, TypeScript, Go, SQL, \textbf{Shell Scripting}} \\
+    \textbf{Frameworks}{: React, Node.js, FastAPI} \\
+    \textbf{Tools \& Platforms}{: \textbf{AWS}, \textbf{Docker}, \textbf{Kubernetes}, \textbf{Git}, \textbf{Linux}, \textbf{Terraform}, Prometheus, Redis, PostgreSQL} \\
+    \textbf{Concepts}{: \textbf{System Design}, \textbf{Machine Learning} Fundamentals, \textbf{Cloud} Architecture, \textbf{Performance} Optimization, \textbf{Platform Reliability}, \textbf{DevOps}, \textbf{FinOps}} \\
+    \textbf{Soft Skills}{: \textbf{Teamwork}, \textbf{Communication}, \textbf{Problem Solving}, \textbf{Leadership}, \textbf{Collaboration}}
+    }
+\end{itemize}
+
+%-----------CERTIFICATIONS-----------
+\section{Certifications}
+\resumeSubHeadingListStart
+    \resumeItem{AWS Certified Solutions Architect – Associate}
+    \resumeItem{Certified Kubernetes Administrator (CKA)}
+\resumeSubHeadingListEnd
+
+%-----------ACHIEVEMENTS-----------
+\section{Achievements}
+\resumeSubHeadingListStart
+    \resumeItem{Winner of Smart India Hackathon 2024 (Healthcare category)}
+    \resumeItem{Secured Global Rank 420 in CodeChef Starter Challenge}
+    \resumeItem{Top Contributor Award at TechSolutions Corp (Q4 2024)}
+\resumeSubHeadingListEnd
+
+%-----------EDUCATION-----------
+\section{Education}
+\resumeSubHeadingListStart
+    \resumeSubheading
+      {National Institute of Technology}{2024}
+      {B.Tech in Computer Science and Engineering}{GPA: 8.8}
+\resumeSubHeadingListEnd
+
+\end{document}

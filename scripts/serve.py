@@ -3,6 +3,7 @@
 import cgi
 import io
 import json
+import os
 import sys
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -67,7 +68,6 @@ def parse_upload(field) -> str:
 
 def run_llm_parser(data: bytes, filename: str):
 	import tempfile
-	import os
 	import traceback
 
 	filename_lower = filename.lower()
@@ -208,7 +208,7 @@ def extract_job_keywords(cv_data: dict, job_data: dict) -> dict:
 # ────────────────────────────────────────────────────────────────────
 # ELITE RESUME STRATEGIST SYSTEM PROMPT (as specified by user)
 # ────────────────────────────────────────────────────────────────────
-_RESUME_STRATEGIST_SYSTEM_PROMPT = """\
+_RESUME_STRATEGIST_SYSTEM_PROMPT = r"""\
 You are an expert resume strategist and LaTeX typesetter embedded in a resume-building application. Every resume you generate must function as a sales document, not a biography: within seconds a reader should see what problem the candidate solved, how, and what impact resulted.
 
 You will receive one JSON object per request describing a single candidate. Some fields may be empty — omit the corresponding resume section entirely rather than leaving it blank or inventing content to fill it.
@@ -221,15 +221,19 @@ You will receive one JSON object per request describing a single candidate. Some
 - Page limit: totalExperienceYears < 5 -> exactly ONE page. >= 5 -> up to two pages, never more.
 
 == CONTENT RULES ==
-1. Convert every responsibility into a result using: [Action verb] + [what was built/done] + [tool/method] + [quantified outcome]. Example: "Worked on AI chatbot implementation" -> "Launched an AI-powered support feature that reduced response time by 60%."
-2. NEVER invent a metric that isn't present in `rawAccomplishments`. If a bullet has no number behind it, rewrite it as a strong qualitative impact statement instead, and append `% TODO: verify metric` as a LaTeX comment directly after that line so the candidate knows to fill it in.
-3. Strip unproven buzzwords ("passionate," "synergy," "hardworking," "detail-oriented," "team player") unless the same bullet already demonstrates it concretely.
-4. Reverse-chronological order within every section.
-5. Use only the data given — if a field/array is empty, omit that section or bullet. Under no circumstances should you invent or hallucinate any projects, experiences, achievements, or credentials. Do not pad with filler. If the user's CV does not contain any experience or projects, do not make them up.
-6. KEYWORD INJECTION: The candidate JSON includes `matchedKeywords` (already in CV) and `missingKeywords` (from job description, NOT in CV). Weave `missingKeywords` naturally into bullet rewrites where the underlying accomplishment genuinely supports it. Never force-insert a keyword where it doesn't fit — context must be authentic.
+1. Convert every responsibility/bullet into a strong impact-oriented result using: [Action verb] + [what was built/done] + [tool/method] + [quantified outcome / impact].
+   - Use strong active keywords (e.g., "Developed", "Made", "Designed", "Built", "Created", "Implemented", "Spearheaded").
+   - Include clear quantified metrics wherever possible (e.g., "reduced latency by 60%", "enhanced efficiency by 20%", "improved response time by 50%").
+   - Highlight direct positive outcomes (e.g., "efficiency was increased", "workload was decreased", "deployment time was cut by 15 minutes").
+2. Ensure enough bullet points (at least 3-4 bullet points per experience/project, where data permits) are generated to give "weight" and detail to the CV.
+3. Keep the language simple, direct, and concise (no passive voice, no empty buzzwords like "passionate", "detail-oriented").
+4. If a bullet has no metric, weave in a qualitative impact statement (e.g., "workload was decreased") and append a LaTeX comment `% TODO: verify metric` directly AFTER the closing brace of the resumeItem macro (e.g., `\resumeItem{Accomplishment statement} % TODO: verify metric`). NEVER place the `%` comment character inside the `\resumeItem{...}` braces, as this comments out the closing brace and breaks compiling!
+5. Reverse-chronological order within every section.
+6. Use only the data given — if a field/array is empty, omit that section or bullet. Under no circumstances should you invent or hallucinate any projects, experiences, achievements, or credentials. Do not pad with filler. If the user's CV does not contain any experience or projects, do not make them up.
+7. KEYWORD INJECTION: The candidate JSON includes `matchedKeywords` (already in CV) and `missingKeywords` (from job description, NOT in CV). Weave `missingKeywords` naturally into bullet rewrites where the underlying accomplishment genuinely supports it. Never force-insert a keyword where it doesn't fit — context must be authentic.
 
 == ATS / LATEX TECHNICAL RULES ==
-- Single-column layout only. No tables, multicol environments, text boxes, images, icons, or colored backgrounds.
+- Strictly maintain the classic Jake's Resume structure. Use a single-column layout only. No tables, multicol environments, text boxes, images, icons, or colored backgrounds.
 - Standard section headings only: "Summary," "Experience," "Education," "Skills," "Projects," "Certifications," "Achievements."
 - Escape every LaTeX special character: % -> \%, & -> \&, $ -> \$, # -> \#, _ -> \_, { -> \{, } -> \}, ~ -> \textasciitilde{}, ^ -> \textasciicircum{}, \ -> \textbackslash{}.
 - Use \href{}{} for links (LinkedIn/GitHub/portfolio).
@@ -238,10 +242,12 @@ You will receive one JSON object per request describing a single candidate. Some
 - Define these custom commands:
   \newcommand{\resumeItem}[1]{\item\small{#1 \vspace{-2pt}}}
   \newcommand{\resumeSubheading}[4]{\vspace{-2pt}\item\begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}\textbf{#1} & #2 \\\textit{\small#3} & \textit{\small #4} \\\end{tabular*}\vspace{-7pt}}
+  \newcommand{\resumeProjectHeading}[2]{\vspace{-2pt}\item\begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}\small#1 & #2 \\\end{tabular*}\vspace{-7pt}}
   \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
   \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
   \newcommand{\resumeItemListStart}{\begin{itemize}}
   \newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+- Use `\resumeProjectHeading` for formatting project headings (e.g. `\resumeProjectHeading{\textbf{Project Name} $|$ \emph{Tech Stack}}{Date}`). Do NOT use `\resumeSubheading` for projects as it expects 4 arguments and will cause compilation errors.
 
 == OUTPUT FORMAT ==
 Return ONLY the complete, compilable .tex source: full preamble through \end{document}. No explanations, no markdown code fences, no text before or after. Your entire response body IS the file contents.
@@ -314,7 +320,6 @@ def _extract_preview_data_from_latex(latex_code: str, cv_data: dict) -> dict:
 
 
 def run_llm_tailor(cv_data, job_data, matched_keywords=None, missing_keywords=None):
-	import json
 	from parser_agent import invoke_llm_with_fallback
 
 	# Step 1: Extract keyword gap if not provided by frontend
@@ -473,7 +478,6 @@ def run_ai_fill_cv(cv_data: dict, resume_text: str = "") -> dict:
 	Use LLM to infer and populate missing projects + certifications
 	using the candidate's extracted skills, education, experience, and raw resume text.
 	"""
-	import json
 	from parser_agent import invoke_llm_with_fallback
 
 	skills = [s.get('name', s) if isinstance(s, dict) else s for s in (cv_data.get('skills') or [])]
@@ -561,6 +565,55 @@ Return ONLY the JSON, no other text.
 		return {'projects': existing_projects, 'certifications': existing_certs}
 
 
+def heal_latex_code(latex_code: str, error_message: str) -> str:
+	"""
+	Call LLM to fix syntax errors in LaTeX code based on compile logs.
+	"""
+	from parser_agent import invoke_llm_with_fallback
+
+	system_prompt = """\
+You are an expert LaTeX developer and troubleshooter. You will receive a LaTeX document that failed to compile, along with the error log from the compiler.
+Your task is to analyze the error log, identify the syntax or structural issues in the LaTeX code, and correct them.
+
+COMMON PROBLEMS TO FIX:
+1. Missing backslashes or wrong macros.
+2. Unescaped special characters (e.g., % must be escaped as \\%, & must be escaped as \\&, $ as \\$, _ as \\_, { as \\{, } as \\}).
+3. Comments using '%' inside braces (e.g. \\resumeItem{... % TODO}) - move the comment character '%' and the comment text OUTSIDE of the closing brace.
+4. Mismatched braces or environments (forgotten \\end{itemize}, extra }, etc.).
+5. Using \\resumeSubheading with only 2 arguments instead of 4, which causes LaTeX to swallow the next lines as arguments. Fix this by using \\resumeProjectHeading{\\textbf{Project Name} $|$ \\emph{Tech Stack}}{Date} instead, or appending empty braces {} for the missing arguments.
+
+Return ONLY the complete, corrected, compilable LaTeX source code (from \\documentclass through \\end{document}). Do NOT output any markdown code blocks, do NOT write any explanatory text. The entire response must be the compilable LaTeX code only.
+"""
+	prompt = f"""\
+The following LaTeX code failed to compile:
+
+--- FAILED LATEX CODE ---
+{latex_code}
+
+--- LATEX COMPILER ERROR LOG ---
+{error_message}
+
+Please output the corrected LaTeX code now.
+"""
+
+	print("[Self-Healing] Calling LLM to heal LaTeX syntax errors...")
+	healed_code = invoke_llm_with_fallback(
+		system_message=system_prompt,
+		prompt_message=prompt,
+		temperature=0.1,
+		allowed_providers=["gemini", "groq"]
+	).strip()
+
+	# Strip markdown fences if present
+	if healed_code.startswith("```"):
+		lines = healed_code.split("\n")
+		healed_code = "\n".join(
+			line for line in lines
+			if not line.strip().startswith("```")
+		).strip()
+
+	return healed_code
+
 
 def compile_latex_to_pdf(latex_code: str) -> bytes:
 	"""
@@ -568,10 +621,17 @@ def compile_latex_to_pdf(latex_code: str) -> bytes:
 	"""
 	import subprocess
 	import tempfile
-	import os
 	import shutil
 	import re
 	from parser_agent import TerminalSpinner
+
+	# Clean up any unescaped % comments that LLM might have incorrectly placed inside \resumeItem{...}
+	# e.g., \resumeItem{text % TODO: verify} -> \resumeItem{text} % TODO: verify
+	latex_code = re.sub(
+		r'\\resumeItem\{([^\n]*?)(?<!\\)%\s*(TODO[^\n]*?)\}',
+		r'\\resumeItem{\1} % \2',
+		latex_code
+	)
 
 	# Strip \usepackage[english]{babel} (with any spacing/options) to avoid compile hangs/errors
 	latex_code = re.sub(r'\\usepackage\s*\[\s*english\s*\]\s*\{\s*babel\s*\}', '', latex_code)
@@ -757,7 +817,30 @@ class FresherFlowHandler(SimpleHTTPRequestHandler):
 				if not latex_code:
 					raise ValueError('latex_code is required.')
 
-				pdf_data = compile_latex_to_pdf(latex_code)
+				import base64
+				max_attempts = 3
+				pdf_data = None
+				last_error = None
+				healed_latex = latex_code
+
+				for attempt in range(1, max_attempts + 1):
+					try:
+						if attempt > 1:
+							print(f"[serve.py] Compiling self-healed LaTeX (Attempt {attempt})...")
+						pdf_data = compile_latex_to_pdf(healed_latex)
+						break
+					except Exception as exc:
+						last_error = str(exc)
+						if attempt < max_attempts:
+							print(f"[serve.py] Attempt {attempt} failed: {last_error}. Initiating self-healing...")
+							try:
+								healed_latex = heal_latex_code(healed_latex, last_error)
+							except Exception as heal_exc:
+								print(f"[serve.py] Self-healing request failed: {heal_exc}")
+								raise exc
+						else:
+							raise exc
+
 				if not pdf_data:
 					raise RuntimeError('Failed to compile LaTeX to PDF.')
 
@@ -765,6 +848,10 @@ class FresherFlowHandler(SimpleHTTPRequestHandler):
 				self.send_header('Content-Type', 'application/pdf')
 				self.send_header('Content-Length', str(len(pdf_data)))
 				self.send_header('Cache-Control', 'no-store')
+				# Send the final (potentially healed) LaTeX code in headers so frontend can sync
+				encoded_latex = base64.b64encode(healed_latex.encode('utf-8')).decode('utf-8')
+				self.send_header('X-Healed-Latex', encoded_latex)
+				self.send_header('Access-Control-Expose-Headers', 'X-Healed-Latex')
 				self.end_headers()
 				self.wfile.write(pdf_data)
 			except Exception as exc:

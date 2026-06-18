@@ -6,6 +6,7 @@ Defines the structure for storing candidate information
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, field_validator, model_validator
 from datetime import datetime
+import json
 
 
 class Skill(BaseModel):
@@ -348,5 +349,4 @@ if __name__ == "__main__":
     print(f"\nCompletion: {cv.calculate_completion()}%")
     print(f"Missing fields: {cv.get_missing_fields()}")
     print(f"\nTailor Schema:")
-    import json
     print(json.dumps(cv.build_tailor_schema(), indent=2))

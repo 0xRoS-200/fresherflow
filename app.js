@@ -882,7 +882,9 @@ async function compilePdfPreview(latexCode) {
 	const loader = el('resumeSheetLoader');
 	const iframe = el('pdfPreviewFrame');
 	const loaderMsg = el('loaderMessage');
+	const container = el('resumeSheet')?.closest('.resume-sheet-container');
 	
+	if (container) container.classList.add('processing');
 	if (loader) loader.hidden = false;
 	if (loaderMsg) loaderMsg.textContent = "Compiling PDF preview...";
 	
@@ -897,6 +899,21 @@ async function compilePdfPreview(latexCode) {
 		if (!resp.ok) {
 			const errData = await resp.json().catch(() => ({}));
 			throw new Error(errData.error || `Server responded with status ${resp.status}`);
+		}
+		
+		// Update LaTeX editor if the backend healed the code
+		const healedHeader = resp.headers.get('X-Healed-Latex');
+		if (healedHeader) {
+			try {
+				const decoded = decodeURIComponent(escape(atob(healedHeader)));
+				const latexArea = el('latexCodeArea');
+				if (latexArea && decoded && latexArea.value !== decoded) {
+					latexArea.value = decoded;
+					consoleLog('[PDF Compiler] ✓ LaTeX self-healed and updated in editor.', 'success');
+				}
+			} catch (e) {
+				console.error('Failed to decode self-healed LaTeX:', e);
+			}
 		}
 		
 		const blob = await resp.blob();
@@ -914,6 +931,7 @@ async function compilePdfPreview(latexCode) {
 		}
 	} finally {
 		if (loader) loader.hidden = true;
+		if (container) container.classList.remove('processing');
 	}
 }
 
