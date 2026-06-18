@@ -226,7 +226,7 @@ class CVTailorAgentWorkflow(AgentWorkflow):
         # Conditional edge: if ATS < target, reconfigure; else sync
         def should_reconfigure(state):
             ats_score = state.get("ats_score", 0)
-            return "reconfigure_if_needed" if ats_score < 0.95 else "sync_to_overleaf"
+            return "reconfigure_if_needed" if ats_score < 0.90 else "sync_to_overleaf"
 
         workflow.add_conditional_edges("check_ats_score", should_reconfigure)
         workflow.add_edge("reconfigure_if_needed", "check_ats_score")
@@ -262,7 +262,7 @@ class CVTailorAgentWorkflow(AgentWorkflow):
 
     def reconfigure_if_needed(self, state: Dict) -> Dict:
         """Reconfigure CV if ATS score below target"""
-        if state.get("ats_score", 0) < 0.95:
+        if state.get("ats_score", 0) < 0.90:
             logger.info("Reconfiguring CV to improve ATS score...")
             state["iteration_count"] = state.get("iteration_count", 0) + 1
         return state

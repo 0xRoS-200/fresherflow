@@ -21,7 +21,7 @@ class CVTailorAgent:
         self.provider = provider
         self.workflow = CVTailorAgentWorkflow(provider)
         self.max_iterations = 3
-        self.target_ats_score = 0.95
+        self.target_ats_score = 0.90
         logger.info(f"CVTailorAgent initialized with provider: {provider.provider_type.value}")
 
     def tailor_cv_content(self, master_cv: Dict, job_data: Dict) -> str:
@@ -145,65 +145,83 @@ class CVTailorAgent:
 
     def _build_tailoring_prompt(self, master_cv: Dict, job_data: Dict) -> str:
         """Build prompt for CV tailoring"""
-        prompt = f"""
-Tailor the following CV for this specific job.
+        prompt = """
+Tailor the Master CV provided below for this specific job.
 Focus on highlighting relevant skills and experience.
 
-MASTER CV:
-{str(master_cv)[:2000]}
-
-JOB REQUIREMENTS:
-Title: {job_data.get('title')}
-Description: {job_data.get('description', '')[:1000]}
-Required Skills: {', '.join(job_data.get('required_skills', []))}
+CRITICAL PROJECT TAILORING RULES:
+For all project descriptions and accomplishments:
+1. Every bullet point/item MUST start with a strong action verb (e.g., Developed, Designed, Engineered, Implemented).
+2. Every item MUST contain a quantitative metric showing achievement (e.g., "reduced latency by 60%", "boosted throughput by 45%", "improved accuracy to 98%").
+3. Every item MUST contain the workload/productivity impact (e.g., "reducing team workload by 30%", "making debugging 20% easier", "saving 15 hours of manual work weekly").
+Example: "Developed an automated regression testing pipeline using PyTest and Docker, reducing test execution latency by 60% and decreasing developer workload by 30%."
 
 Please provide:
 1. Tailored professional summary
 2. Reordered experience highlighting relevant achievements
 3. Skills matching job requirements
-4. Custom accomplishments for this role
+4. Custom accomplishments for this role following the strict Action Verb + Quantitative Metric + Impact formatting above.
 
 Keep professional tone and be specific to the job.
-"""
+
+TARGET JOB Title: {job_title}
+Required Skills: {required_skills}
+
+MASTER CV:
+{master_cv_str}
+
+JOB DESCRIPTION:
+{job_description}
+""".format(
+            job_title=job_data.get('title'),
+            required_skills=', '.join(job_data.get('required_skills', [])),
+            master_cv_str=str(master_cv),
+            job_description=job_data.get('description', '')
+        )
         return prompt
 
     def _build_latex_generation_prompt(self, content: Dict) -> str:
         """Build prompt for LaTeX generation"""
-        prompt = f"""
-Generate a professional LaTeX/Jake format CV from this content:
-
-{str(content)[:2000]}
+        prompt = """
+Generate a professional LaTeX/Jake format CV from the content provided below.
 
 Requirements:
 - Use Jake CV template style
 - Professional formatting
 - ATS-friendly without graphics/tables
-- Clear sections: Contact, Summary, Experience, Skills, Education
-- Proper LaTeX syntax
+- Clear sections: Contact, Summary, Experience, Skills, Education, Projects
+- Projects MUST contain accomplishments that strictly follow the syntax: Action Verb + Quantitative Metric + Impact (e.g. "Developed... reducing execution time by 60% and decreasing team workload by 30%").
+- Proper LaTeX syntax. Ensure all percentage symbols are escaped as \\% and all ampersands are escaped as \\&.
+- Return complete, compilable LaTeX code starting directly with \\documentclass. Do not wrap the code in markdown formatting or backticks.
 
-Return complete, compilable LaTeX code.
-"""
+TAILORED CONTENT TO GENERATE LATEX:
+{content_str}
+""".format(content_str=str(content))
         return prompt
 
     def _build_reconfiguration_prompt(self, cv_content: str, ats_score: float, job_data: Dict) -> str:
         """Build prompt for CV reconfiguration"""
-        prompt = f"""
-Improve this CV to increase ATS score (current: {ats_score:.1%}).
-
-CURRENT CV:
-{cv_content[:2000]}
-
-TARGET JOB:
-{job_data.get('description', '')[:1000]}
+        prompt = """
+Improve the CV provided below to increase its ATS score (current score: {ats_score_percent}, target is 90%+).
 
 Suggestions to improve:
-1. Add more keywords from job description
-2. Use stronger action verbs
-3. Quantify achievements more
-4. Better skill matching
+1. Add more keywords from the job description.
+2. Use stronger action verbs.
+3. Quantify achievements more: ensure every project bullet point contains a clear metric (e.g., "reduced latency by 60%") and a workload/productivity impact (e.g., "reducing workload by 30%").
+4. Better skill matching.
 
 Return improved CV content keeping the structure.
-"""
+
+TARGET JOB DESCRIPTION:
+{job_description}
+
+CURRENT CV CONTENT:
+{cv_content}
+""".format(
+            ats_score_percent=f"{ats_score:.1%}",
+            job_description=job_data.get('description', ''),
+            cv_content=cv_content
+        )
         return prompt
 
     def _create_overleaf_project(self, latex_content: str, user_email: str) -> Dict:

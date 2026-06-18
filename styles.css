@@ -1388,6 +1388,35 @@ select option {
   .nav-tab { padding: 7px 13px; font-size: .85rem; }
 }
 
+/* ── Eligibility Scorecard Styling ── */
+.job-selection-eligibility-container {
+  will-change: transform, opacity;
+  animation: slideInDown 0.35s var(--ease-spring) both;
+}
+
+.eligibility-card {
+  will-change: transform;
+  transition: transform var(--dur-normal) var(--ease-spring), border-color var(--dur-normal) ease;
+}
+
+.eligibility-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
+}
+
+.eligibility-card strong {
+  display: block;
+  font-size: 1.6rem;
+  margin: 4px 0;
+  letter-spacing: -0.03em;
+  font-family: var(--font);
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-10px) translateZ(0); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+
 /* ── Reduce motion for accessibility ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -162,13 +162,13 @@ def test_llm_parsing():
     
     try:
         parser = ParserAgent()
-        print("[OK] ParserAgent initialized with Claude API")
+        print("[OK] ParserAgent initialized with Gemini API")
         print("  Note: Full test requires a real PDF file")
         print("  Usage: parser.parse_workflow('path/to/resume.pdf')")
         return True
     except Exception as e:
         print(f"[FAIL] Error initializing ParserAgent: {e}")
-        print("  Make sure ANTHROPIC_API_KEY is set in .env")
+        print("  Make sure GOOGLE_API_KEY is set in .env")
         return False
 
 def test_validation():

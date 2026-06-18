@@ -308,7 +308,4 @@ class ResumeParserUnstructured:
 
 # Test the parser
 if __name__ == "__main__":
-    # Example usage (requires a test PDF)
     parser = ResumeParserUnstructured()
-    # cv = parser.parse_pdf("sample_resume.pdf")
-    # print(cv.model_dump_json(indent=2))

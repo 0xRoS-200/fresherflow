@@ -408,11 +408,41 @@ def run_llm_tailor(cv_data, job_data, matched_keywords=None, missing_keywords=No
 	# Step 3: Call LLM with elite system prompt — response is raw LaTeX
 	print(f"[Tailor] Calling elite resume strategist (matched={len(matched_keywords)}, missing={len(missing_keywords)} keywords)...")
 
-	latex_code = invoke_llm_with_fallback(
-		system_message=_RESUME_STRATEGIST_SYSTEM_PROMPT,
-		prompt_message=json.dumps(candidate_json, indent=2),
-		temperature=0.15  # low temperature for precise, consistent LaTeX output
-	).strip()
+	# Check if Ollama is active/running
+	import requests
+	ollama_active = False
+	ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip('/')
+	try:
+		headers = {}
+		if "ngrok" in ollama_url.lower():
+			headers["ngrok-skip-browser-warning"] = "true"
+		resp = requests.get(f"{ollama_url}/api/tags", headers=headers, timeout=2)
+		if resp.status_code == 200:
+			ollama_active = True
+	except Exception:
+		pass
+
+	latex_code = None
+	if ollama_active:
+		try:
+			print("[Tailor] Ollama is active, attempting to use Ollama for LaTeX generation...")
+			latex_code = invoke_llm_with_fallback(
+				system_message=_RESUME_STRATEGIST_SYSTEM_PROMPT,
+				prompt_message=json.dumps(candidate_json, indent=2),
+				temperature=0.15,  # low temperature for precise, consistent LaTeX output
+				allowed_providers=["ollama"]
+			).strip()
+		except Exception as e:
+			print(f"[Tailor] Ollama generation failed: {e}. Falling back to Gemini...")
+
+	if not latex_code:
+		print("[Tailor] Using Gemini for LaTeX generation...")
+		latex_code = invoke_llm_with_fallback(
+			system_message=_RESUME_STRATEGIST_SYSTEM_PROMPT,
+			prompt_message=json.dumps(candidate_json, indent=2),
+			temperature=0.15,
+			allowed_providers=["gemini"]
+		).strip()
 
 	# Strip markdown fences if the LLM wrapped the output
 	if latex_code.startswith('```'):
@@ -452,18 +482,18 @@ def run_ai_fill_cv(cv_data: dict, resume_text: str = "") -> dict:
 	experience = cv_data.get('experience') or []
 	education = cv_data.get('education') or []
 
-	prompt = f"""
+	prompt = """
 You are an expert career consultant and resume builder. Based on the candidate profile below, intelligently infer and generate realistic projects and certifications that they likely have, based on their skills, education, and experience. Be realistic - only suggest things plausible given their background.
 
 Candidate Profile:
-- Name: {cv_data.get('name', 'Unknown')}
-- Skills: {', '.join(skills)}
-- Education: {json.dumps(education, indent=2)}
-- Experience: {json.dumps(experience, indent=2)}
-- Existing Projects (already extracted): {json.dumps(existing_projects, indent=2)}
-- Existing Certifications (already extracted): {json.dumps(existing_certs, indent=2)}
+- Name: {name}
+- Skills: {skills_str}
+- Education: {education_json}
+- Experience: {experience_json}
+- Existing Projects (already extracted): {existing_projects_json}
+- Existing Certifications (already extracted): {existing_certs_json}
 - Raw Resume Text (for extra context):
-{resume_text[:3000]}
+{resume_text_chunk}
 
 Instructions:
 1. If projects list is empty or has <2 items, suggest 2-3 plausible projects using their tech stack. Each project should be something a student/fresher with their background would realistically build.
@@ -494,13 +524,22 @@ Return ONLY valid JSON matching this schema:
 }}
 
 Return ONLY the JSON, no other text.
-"""
+""".format(
+		name=cv_data.get('name', 'Unknown'),
+		skills_str=', '.join(skills),
+		education_json=json.dumps(education, indent=2),
+		experience_json=json.dumps(experience, indent=2),
+		existing_projects_json=json.dumps(existing_projects, indent=2),
+		existing_certs_json=json.dumps(existing_certs, indent=2),
+		resume_text_chunk=resume_text[:3000]
+	)
 
 	try:
 		response_text = invoke_llm_with_fallback(
 			system_message="You are an expert resume consultant. Return valid JSON only.",
 			prompt_message=prompt,
-			temperature=0.3
+			temperature=0.3,
+			allowed_providers=["gemini", "groq"]
 		).strip()
 		try:
 			result = json.loads(response_text)

@@ -19,10 +19,13 @@ class AgentManager:
         try:
             from cv_customizer.agents.parser_agent import ParserAgent
 
-            provider = LLMProviderFactory.get_provider(LLMConfig.PARSER_PROVIDER)
+            provider = LLMProviderFactory.get_provider(
+                LLMConfig.PARSER_PROVIDER,
+                allowed_types=[ProviderType.GEMINI, ProviderType.GROQ]
+            )
             agent = ParserAgent(provider=provider)
             cls._agents["parser"] = agent
-            logger.info(f"Parser Agent initialized with {LLMConfig.PARSER_PROVIDER}")
+            logger.info(f"Parser Agent initialized with {provider.provider_type.value} (requested: {LLMConfig.PARSER_PROVIDER})")
             return agent
         except Exception as e:
             logger.error(f"Failed to initialize Parser Agent: {e}")
@@ -34,10 +37,13 @@ class AgentManager:
         try:
             from cv_customizer.agents.job_search_agent import JobSearchAgent
 
-            provider = LLMProviderFactory.get_provider(LLMConfig.JOB_SEARCH_PROVIDER)
+            provider = LLMProviderFactory.get_provider(
+                LLMConfig.JOB_SEARCH_PROVIDER,
+                allowed_types=[ProviderType.GEMINI, ProviderType.GROQ]
+            )
             agent = JobSearchAgent(provider=provider)
             cls._agents["job_search"] = agent
-            logger.info(f"Job Search Agent initialized with {LLMConfig.JOB_SEARCH_PROVIDER}")
+            logger.info(f"Job Search Agent initialized with {provider.provider_type.value} (requested: {LLMConfig.JOB_SEARCH_PROVIDER})")
             return agent
         except Exception as e:
             logger.error(f"Failed to initialize Job Search Agent: {e}")
@@ -49,10 +55,13 @@ class AgentManager:
         try:
             from cv_customizer.agents.cv_tailor_agent import CVTailorAgent
 
-            provider = LLMProviderFactory.get_provider(LLMConfig.CV_TAILOR_PROVIDER)
+            provider = LLMProviderFactory.get_provider(
+                LLMConfig.CV_TAILOR_PROVIDER,
+                allowed_types=[ProviderType.OLLAMA, ProviderType.GEMINI, ProviderType.GROQ]
+            )
             agent = CVTailorAgent(provider=provider)
             cls._agents["cv_tailor"] = agent
-            logger.info(f"CV Tailor Agent initialized with {LLMConfig.CV_TAILOR_PROVIDER}")
+            logger.info(f"CV Tailor Agent initialized with {provider.provider_type.value} (requested: {LLMConfig.CV_TAILOR_PROVIDER})")
             return agent
         except Exception as e:
             logger.error(f"Failed to initialize CV Tailor Agent: {e}")
@@ -140,19 +149,19 @@ class AgentConfig:
     PROVIDER_CONFIGS = {
         "parser": {
             "primary": "gemini",
-            "fallback": ["claude", "groq", "ollama"],
+            "fallback": ["groq", "ollama"],
             "temperature": 0.3,
             "max_tokens": 4000,
         },
         "job_search": {
-            "primary": "claude",
-            "fallback": ["chatgpt", "groq", "gemini"],
+            "primary": "groq",
+            "fallback": ["gemini", "ollama"],
             "temperature": 0.5,
             "max_tokens": 3000,
         },
         "cv_tailor": {
-            "primary": "chatgpt",
-            "fallback": ["claude", "groq", "gemini"],
+            "primary": "ollama",
+            "fallback": ["gemini", "groq"],
             "temperature": 0.7,
             "max_tokens": 5000,
         },

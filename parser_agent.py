@@ -82,9 +82,10 @@ class ParserAgent:
 
             # Get raw text for LLM enhancement
             text = PDFExtractor.extract_text(pdf_path)
+            sections = PDFExtractor.extract_sections(text)
 
         # Enhance with LLM parsing
-        enhanced_cv = self._enhance_with_llm(text, basic_cv)
+        enhanced_cv = self._enhance_with_llm(text, basic_cv, sections)
 
         return enhanced_cv
 
@@ -105,15 +106,30 @@ class ParserAgent:
         cv.mark_null_fields()
         return cv
 
-    def _enhance_with_llm(self, resume_text: str, basic_cv: MasterCV) -> MasterCV:
+    def _enhance_with_llm(self, resume_text: str, basic_cv: MasterCV, sections: Optional[Dict[str, str]] = None) -> MasterCV:
         """
-        Use Gemini to parse resume text and extract structured data.
+        Use LLM provider fallback chain to parse resume text and extract structured data.
         Extracts all fields including profileType, totalExperienceYears,
         rawAccomplishments, and achievements.
         """
-        print("[Parser] Enhancing extraction with LLM (Gemini)...")
+        print("[Parser] Enhancing extraction with LLM...")
 
-        extraction_prompt = f"""
+        from llm_provider import get_provider_order
+        provider_order = get_provider_order()
+        is_ollama_primary = False  # Ollama is strictly restricted to coding/LaTeX, never used for resume extraction
+
+        if is_ollama_primary and sections and len(sections) >= 3:
+            print("[Parser] Ollama primary provider detected. Using parallel Map-Reduce section parsing...")
+            try:
+                data = self._process_sections_parallel(sections)
+                if data.get("name") and (data.get("email") or data.get("phone")):
+                    cv = self._reconstruct_cv(data, basic_cv)
+                    return cv
+                print("[Parser] Parallel parsing incomplete, falling back to single prompt...")
+            except Exception as e:
+                print(f"[Parser] Parallel parsing failed: {e}, falling back to single prompt...")
+
+        extraction_prompt = """
 You are a professional resume parser. Extract ALL information from the resume text below and return ONLY valid JSON matching this schema exactly.
 
 CRITICAL EXTRACTION RULES:
@@ -195,14 +211,14 @@ Resume text:
 {resume_text}
 
 Return ONLY the JSON object, no other text, no markdown fences.
-"""
+""".format(resume_text=resume_text)
 
         try:
-            with TerminalSpinner("Calling LLM (Gemini) for structured resume extraction..."):
+            with TerminalSpinner("Calling LLM for structured resume extraction..."):
                 _, response = invoke_with_fallback([
                     SystemMessage(content="You are an expert resume parser. Extract all information faithfully and return valid JSON only. Never invent or rephrase — copy rawAccomplishments exactly as written. If projects or experiences are not in the text, do not invent them under any circumstances."),
                     HumanMessage(content=extraction_prompt)
-                ])
+                ], allowed_providers=["gemini", "groq"])
 
             response_text = response.content.strip()
 
@@ -231,6 +247,223 @@ Return ONLY the JSON object, no other text, no markdown fences.
         except Exception as e:
             print(f"[Parser] LLM enhancement failed: {e}, using basic extraction")
             return basic_cv
+
+    def _process_sections_parallel(self, sections: Dict[str, str]) -> Dict[str, Any]:
+        from concurrent.futures import ThreadPoolExecutor
+        from langchain_core.messages import HumanMessage, SystemMessage
+        from llm_provider import invoke_with_fallback
+        
+        prompts = {
+            "personal": """Extract personal contact information from this text. Return ONLY a valid JSON object matching this schema:
+{
+  "name": "string or null",
+  "email": "string or null",
+  "phone": "string or null",
+  "location": {"city": "string or null", "country": "string or null"},
+  "socialLinks": {"linkedin": "string or null", "github": "string or null", "portfolio": "string or null", "twitter": "string or null"}
+}
+Return ONLY valid JSON.
+Text:
+""",
+            "experience": """Extract work experience entries from this text. Return ONLY a valid JSON object matching this schema:
+{
+  "experience": [
+    {
+      "role": "string",
+      "company": "string",
+      "startDate": "YYYY-MM or null",
+      "endDate": "YYYY-MM or 'present' or null",
+      "description": "string",
+      "responsibilities": ["string"],
+      "rawAccomplishments": ["EXACT copied bullet points from resume, unmodified"]
+    }
+  ]
+}
+Return ONLY valid JSON.
+Text:
+""",
+            "education": """Extract education entries from this text. Return ONLY a valid JSON object matching this schema:
+{
+  "education": [
+    {
+      "degree": "string",
+      "university": "string",
+      "institution": "string",
+      "field": "string or null",
+      "graduationYear": number or null,
+      "startDate": "YYYY or YYYY-MM or null",
+      "endDate": "YYYY or YYYY-MM or null",
+      "gpa": number or null,
+      "description": "string or null"
+    }
+  ]
+}
+Return ONLY valid JSON.
+Text:
+""",
+            "skills": """Extract skills and languages from this text. Return ONLY a valid JSON object matching this schema:
+{
+  "skills": [
+    {"name": "string", "proficiency": "beginner|intermediate|expert", "category": "technical|soft|domain"}
+  ],
+  "languages": [
+    {"name": "string", "proficiency": "beginner|intermediate|fluent|native"}
+  ]
+}
+Return ONLY valid JSON.
+Text:
+""",
+            "projects": """Extract project entries from this text. Return ONLY a valid JSON object matching this schema:
+{
+  "projects": [
+    {
+      "title": "string",
+      "description": "string",
+      "techStack": "comma-separated string of technologies",
+      "technologies": ["string"],
+      "repositoryUrl": "URL or null",
+      "deployedUrl": "URL or null",
+      "date": "YYYY-MM or null",
+      "rawAccomplishments": ["EXACT copied bullet points from resume describing this project"]
+    }
+  ]
+}
+Return ONLY valid JSON.
+Text:
+""",
+            "certifications": """Extract certifications and awards from this text. Return ONLY a valid JSON object matching this schema:
+{
+  "certifications": [
+    {"name": "string", "issuer": "string", "issueDate": number or null, "expiryDate": null, "credentialUrl": "URL or null"}
+  ],
+  "achievements": [
+    "string — standalone awards, hackathon wins, honors, competitive rankings ONLY"
+  ]
+}
+Return ONLY valid JSON.
+Text:
+"""
+        }
+
+        # Combine contact, summary, etc. into a single personal text block if they exist
+        combined_sections = {}
+        for sec_name, content in sections.items():
+            key = sec_name.lower().strip()
+            if key in ["contact", "summary", "objective", "profile", "about"]:
+                combined_sections["personal"] = combined_sections.get("personal", "") + "\n" + content
+            elif key in ["experience", "work experience", "employment"]:
+                combined_sections["experience"] = content
+            elif key in ["education", "academic", "qualifications"]:
+                combined_sections["education"] = content
+            elif key in ["skills", "technical skills", "languages"]:
+                combined_sections["skills"] = combined_sections.get("skills", "") + "\n" + content
+            elif key in ["projects", "portfolio"]:
+                combined_sections["projects"] = content
+            elif key in ["certifications", "awards", "credentials"]:
+                combined_sections["certifications"] = combined_sections.get("certifications", "") + "\n" + content
+
+        final_data = {
+            "name": None,
+            "email": None,
+            "phone": None,
+            "location": {"city": None, "country": None},
+            "profileType": "fresher",
+            "totalExperienceYears": 0.0,
+            "targetRole": None,
+            "summary": None,
+            "skills": [],
+            "experience": [],
+            "education": [],
+            "certifications": [],
+            "projects": [],
+            "socialLinks": {"linkedin": None, "github": None, "portfolio": None, "twitter": None},
+            "languages": [],
+            "achievements": []
+        }
+
+        def worker(key, text):
+            if key not in prompts:
+                return key, {}
+            prompt = prompts[key] + text
+            try:
+                _, response = invoke_with_fallback([
+                    SystemMessage(content="You are an expert resume parser. Extract section information faithfully and return valid JSON only."),
+                    HumanMessage(content=prompt)
+                ], allowed_providers=["gemini", "groq"])
+                # Clean markdown
+                response_text = response.content.strip()
+                if response_text.startswith("```"):
+                    lines = response_text.split("\n")
+                    response_text = "\n".join(
+                        line for line in lines
+                        if not line.strip().startswith("```")
+                    ).strip()
+                
+                try:
+                    parsed = json.loads(response_text)
+                except json.JSONDecodeError:
+                    import re
+                    json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                    if json_match:
+                        parsed = json.loads(json_match.group())
+                    else:
+                        parsed = {}
+                return key, parsed
+            except Exception as e:
+                print(f"Error parsing section {key} in parallel: {e}")
+                return key, {}
+
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            futures = [executor.submit(worker, key, text) for key, text in combined_sections.items() if text.strip()]
+            for future in futures:
+                key, result = future.result()
+                if not result:
+                    continue
+                if key == "personal":
+                    for field in ["name", "email", "phone"]:
+                        if result.get(field):
+                            final_data[field] = result[field]
+                    if result.get("location"):
+                        final_data["location"].update(result["location"])
+                    if result.get("socialLinks"):
+                        final_data["socialLinks"].update(result["socialLinks"])
+                elif key == "experience":
+                    final_data["experience"] = result.get("experience") or []
+                elif key == "education":
+                    final_data["education"] = result.get("education") or []
+                elif key == "skills":
+                    final_data["skills"] = result.get("skills") or []
+                    final_data["languages"] = result.get("languages") or []
+                elif key == "projects":
+                    final_data["projects"] = result.get("projects") or []
+                elif key == "certifications":
+                    final_data["certifications"] = result.get("certifications") or []
+                    final_data["achievements"] = result.get("achievements") or []
+
+        # Post-process profileType & totalExperienceYears
+        # Calculate experience years
+        total_months = 0
+        for exp in final_data["experience"]:
+            try:
+                start = exp.get("startDate")
+                end = exp.get("endDate")
+                if start and len(start) >= 4:
+                    sy = int(start[:4])
+                    sm = int(start[5:7]) if len(start) >= 7 else 1
+                    if not end or end.lower() == "present":
+                        import datetime
+                        now = datetime.datetime.now()
+                        ey, em = now.year, now.month
+                    else:
+                        ey = int(end[:4])
+                        em = int(end[5:7]) if len(end) >= 7 else 12
+                    total_months += (ey - sy) * 12 + (em - sm)
+            except Exception:
+                pass
+        final_data["totalExperienceYears"] = round(total_months / 12, 1)
+        final_data["profileType"] = "fresher" if final_data["totalExperienceYears"] < 1 else "experienced"
+
+        return final_data
 
     def _reconstruct_cv(self, parsed_data: Dict[str, Any], basic_cv: Optional[MasterCV] = None) -> MasterCV:
         """Reconstruct Master CV from parsed data, mapping all new fields and falling back to basic_cv where necessary"""
@@ -467,7 +700,7 @@ Return ONLY the JSON object, no other text, no markdown fences.
         return cv
 
 
-def invoke_llm_with_fallback(system_message: str, prompt_message: str, temperature: float = 0.7) -> str:
+def invoke_llm_with_fallback(system_message: str, prompt_message: str, temperature: float = 0.7, allowed_providers: Optional[list[str]] = None) -> str:
     """Helper wrapper for serve.py to invoke LLM with fallback and return text content."""
     from langchain_core.messages import SystemMessage, HumanMessage
     from llm_provider import invoke_with_fallback
@@ -476,17 +709,10 @@ def invoke_llm_with_fallback(system_message: str, prompt_message: str, temperatu
         SystemMessage(content=system_message),
         HumanMessage(content=prompt_message)
     ]
-    _, response = invoke_with_fallback(messages)
+    _, response = invoke_with_fallback(messages, allowed_providers=allowed_providers)
     return response.content
 
 
 # Example usage
 if __name__ == "__main__":
     parser_agent = ParserAgent()
-
-    # Example: Parse a PDF
-    # cv = parser_agent.parse_workflow("sample_resume.pdf")
-    # print("\nExtracted Master CV:")
-    # print(cv.model_dump_json(indent=2))
-    # print(f"\nTailor Schema Preview:")
-    # import json; print(json.dumps(cv.build_tailor_schema(), indent=2))

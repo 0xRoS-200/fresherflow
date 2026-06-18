@@ -10,11 +10,8 @@ class CVExtractionPrompts:
     @staticmethod
     def build_initial_parsing_prompt(raw_text: str) -> str:
         """Build prompt for initial CV data extraction"""
-        return dedent(f"""
-        Extract structured information from this resume/CV text.
-        
-        RESUME TEXT:
-        {raw_text[:3000]}
+        return dedent("""
+        Extract structured information from the resume/CV text provided at the end.
         
         Please extract and structure the following information:
         
@@ -52,7 +49,7 @@ class CVExtractionPrompts:
            - Graduation date (YYYY-MM)
            - GPA (if mentioned)
            - Notable activities or awards
-        
+          
         5. SKILLS:
            - List all skills mentioned
            - For each skill, estimate proficiency level (beginner, intermediate, advanced, expert)
@@ -84,16 +81,16 @@ class CVExtractionPrompts:
         Return as a clean, well-formatted JSON object with extracted data.
         If information is not present, use null values.
         Be thorough and extract all available information.
-        """)
+
+        RESUME TEXT TO PARSE:
+        {raw_text}
+        """).format(raw_text=raw_text)
 
     @staticmethod
     def build_master_cv_structuring_prompt(extracted_data: str) -> str:
         """Build prompt for structuring into Master CV format"""
-        return dedent(f"""
-        Convert this extracted CV data into the Master CV JSON schema format.
-        
-        EXTRACTED DATA:
-        {extracted_data[:2000]}
+        return dedent("""
+        Convert the extracted CV data provided at the end into the Master CV JSON schema format.
         
         MASTER CV SCHEMA REQUIREMENTS:
         
@@ -202,19 +199,16 @@ class CVExtractionPrompts:
         7. Do not include markdown formatting, just raw JSON
         
         Return ONLY the JSON object, no explanation or markdown.
-        """)
+
+        EXTRACTED DATA TO CONVERT:
+        {extracted_data}
+        """).format(extracted_data=extracted_data)
 
     @staticmethod
     def build_confidence_scoring_prompt(extracted_data: str, master_cv: str) -> str:
         """Build prompt for confidence scoring"""
-        return dedent(f"""
+        return dedent("""
         Evaluate the quality and completeness of this CV extraction.
-        
-        ORIGINAL DATA:
-        {extracted_data[:1000]}
-        
-        STRUCTURED CV:
-        {master_cv[:1000]}
         
         Rate the extraction on these criteria (1-10 scale):
         1. Accuracy of extracted data
@@ -237,16 +231,19 @@ class CVExtractionPrompts:
         }}
         
         Return ONLY valid JSON, no markdown.
-        """)
+
+        ORIGINAL DATA:
+        {extracted_data}
+        
+        STRUCTURED CV:
+        {master_cv}
+        """).format(extracted_data=extracted_data, master_cv=master_cv)
 
     @staticmethod
     def build_missing_fields_prompt(master_cv: str) -> str:
         """Build prompt for identifying missing fields"""
-        return dedent(f"""
+        return dedent("""
         Analyze this Master CV and identify missing or incomplete fields.
-        
-        CV:
-        {master_cv[:1000]}
         
         For each missing or incomplete field, suggest:
         1. What information is missing
@@ -265,7 +262,10 @@ class CVExtractionPrompts:
         }}
         
         Return ONLY valid JSON, no markdown.
-        """)
+
+        CV:
+        {master_cv}
+        """).format(master_cv=master_cv)
 
 
 class DataValidationPrompts:
@@ -274,11 +274,8 @@ class DataValidationPrompts:
     @staticmethod
     def build_validation_prompt(cv_data: Dict) -> str:
         """Build prompt for data validation"""
-        return dedent(f"""
+        return dedent("""
         Validate this CV data for accuracy and consistency.
-        
-        CV DATA:
-        {str(cv_data)[:1500]}
         
         Check for:
         1. Date consistency (end_date > start_date)
@@ -299,4 +296,7 @@ class DataValidationPrompts:
         }}
         
         Return ONLY valid JSON.
-        """)
+
+        CV DATA:
+        {cv_data_str}
+        """).format(cv_data_str=str(cv_data))

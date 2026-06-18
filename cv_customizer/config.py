@@ -10,19 +10,9 @@ load_dotenv()
 class LLMConfig:
     """LLM Provider configuration"""
     PROVIDERS = {
-        "claude": {
-            "name": "Claude (Anthropic)",
-            "env_var": "ANTHROPIC_API_KEY",
-            "required": True,
-        },
         "gemini": {
             "name": "Gemini (Google)",
             "env_var": "GOOGLE_API_KEY",
-            "required": True,
-        },
-        "chatgpt": {
-            "name": "ChatGPT (OpenAI)",
-            "env_var": "OPENAI_API_KEY",
             "required": True,
         },
         "groq": {
@@ -36,17 +26,12 @@ class LLMConfig:
             "required": False,
             "base_url": "http://localhost:11434",
         },
-        "kimi": {
-            "name": "Kimi (Moonshot)",
-            "env_var": "KIMI_API_KEY",
-            "required": False,
-        },
     }
 
     # Selected providers
     PARSER_PROVIDER = os.getenv("PARSER_LLM_PROVIDER", "gemini")  # Agent1
-    JOB_SEARCH_PROVIDER = os.getenv("JOB_SEARCH_LLM_PROVIDER", "claude")  # Agent2
-    CV_TAILOR_PROVIDER = os.getenv("CV_TAILOR_LLM_PROVIDER", "chatgpt")  # Agent3
+    JOB_SEARCH_PROVIDER = os.getenv("JOB_SEARCH_LLM_PROVIDER", "groq")  # Agent2
+    CV_TAILOR_PROVIDER = os.getenv("CV_TAILOR_LLM_PROVIDER", "ollama")  # Agent3
 
 
 class AppConfig:

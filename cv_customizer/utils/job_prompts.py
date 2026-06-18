@@ -10,11 +10,8 @@ class JobSearchPrompts:
     @staticmethod
     def build_job_metadata_extraction_prompt(job_description: str) -> str:
         """Build prompt to extract structured metadata from job description"""
-        return dedent(f"""
-        Extract structured job metadata from this job description.
-        
-        JOB DESCRIPTION:
-        {job_description[:2000]}
+        return dedent("""
+        Extract structured job metadata from the job description provided at the end.
         
         Extract and structure the following:
         
@@ -65,19 +62,16 @@ class JobSearchPrompts:
         Return as clean, well-formatted JSON with extracted data.
         If information is not present, use null values.
         Be thorough and extract all available information.
-        """)
+
+        JOB DESCRIPTION TO ANALYZE:
+        {job_description}
+        """).format(job_description=job_description)
 
     @staticmethod
     def build_keyword_extraction_prompt(job_requirements: str, cv_keywords: str) -> str:
         """Build prompt to extract keywords for ATS matching"""
-        return dedent(f"""
-        Extract and analyze keywords from job requirements and CV.
-        
-        JOB REQUIREMENTS:
-        {job_requirements[:1500]}
-        
-        CV KEYWORDS:
-        {cv_keywords[:1500]}
+        return dedent("""
+        Extract and analyze keywords from job requirements and CV provided at the end.
         
         For each of the following categories, extract keywords:
         
@@ -126,19 +120,19 @@ class JobSearchPrompts:
         }}
         
         Return ONLY valid JSON, no markdown.
-        """)
+
+        JOB REQUIREMENTS:
+        {job_requirements}
+        
+        CV KEYWORDS:
+        {cv_keywords}
+        """).format(job_requirements=job_requirements, cv_keywords=cv_keywords)
 
     @staticmethod
     def build_ats_analysis_prompt(cv_text: str, job_description: str) -> str:
         """Build prompt for comprehensive ATS analysis"""
-        return dedent(f"""
+        return dedent("""
         Perform comprehensive ATS (Applicant Tracking System) analysis comparing CV to job.
-        
-        CV TEXT (first 1500 chars):
-        {cv_text[:1500]}
-        
-        JOB DESCRIPTION (first 1500 chars):
-        {job_description[:1500]}
         
         Analyze:
         
@@ -190,16 +184,19 @@ class JobSearchPrompts:
         }}
         
         Return ONLY valid JSON.
-        """)
+
+        CV TEXT:
+        {cv_text}
+        
+        JOB DESCRIPTION:
+        {job_description}
+        """).format(cv_text=cv_text, job_description=job_description)
 
     @staticmethod
     def build_job_ranking_prompt(jobs_with_scores: str) -> str:
         """Build prompt for ranking multiple jobs"""
-        return dedent(f"""
+        return dedent("""
         Rank these jobs based on fit, growth potential, and alignment with CV.
-        
-        JOBS WITH ATS SCORES:
-        {jobs_with_scores[:2000]}
         
         For each job, consider:
         
@@ -246,16 +243,16 @@ class JobSearchPrompts:
         }}
         
         Return ONLY valid JSON.
-        """)
+
+        JOBS WITH ATS SCORES:
+        {jobs_with_scores}
+        """).format(jobs_with_scores=jobs_with_scores)
 
     @staticmethod
     def build_job_search_query_prompt(cv_skills: str, experience_level: str) -> str:
         """Build prompt to generate job search queries"""
-        return dedent(f"""
+        return dedent("""
         Generate optimized job search queries based on CV.
-        
-        CV SKILLS: {cv_skills}
-        EXPERIENCE LEVEL: {experience_level}
         
         Generate search queries for major job portals:
         
@@ -297,7 +294,10 @@ class JobSearchPrompts:
         }}
         
         Return ONLY valid JSON.
-        """)
+
+        CV SKILLS: {cv_skills}
+        EXPERIENCE LEVEL: {experience_level}
+        """).format(cv_skills=cv_skills, experience_level=experience_level)
 
 
 class JobFilteringPrompts:
@@ -306,14 +306,8 @@ class JobFilteringPrompts:
     @staticmethod
     def build_company_culture_assessment_prompt(company_info: str, cv_profile: str) -> str:
         """Build prompt to assess company culture fit"""
-        return dedent(f"""
+        return dedent("""
         Assess cultural fit between candidate and company.
-        
-        COMPANY INFO:
-        {company_info[:1000]}
-        
-        CV PROFILE:
-        {cv_profile[:1000]}
         
         Analyze:
         1. Work environment match
@@ -331,17 +325,19 @@ class JobFilteringPrompts:
           "team_dynamics": number (0-10),
           "insights": array of strings
         }}
-        """)
+
+        COMPANY INFO:
+        {company_info}
+        
+        CV PROFILE:
+        {cv_profile}
+        """).format(company_info=company_info, cv_profile=cv_profile)
 
     @staticmethod
     def build_salary_negotiation_prompt(job_salary: str, market_data: str, cv_level: str) -> str:
         """Build prompt for salary negotiation analysis"""
-        return dedent(f"""
+        return dedent("""
         Analyze salary offer and market positioning.
-        
-        JOB SALARY: {job_salary}
-        MARKET DATA: {market_data}
-        CANDIDATE LEVEL: {cv_level}
         
         Provide:
         1. Market rate comparison
@@ -356,4 +352,8 @@ class JobFilteringPrompts:
           "negotiation_potential": number (0-100),
           "recommendation": string
         }}
-        """)
+
+        JOB SALARY: {job_salary}
+        MARKET DATA: {market_data}
+        CANDIDATE LEVEL: {cv_level}
+        """).format(job_salary=job_salary, market_data=market_data, cv_level=cv_level)

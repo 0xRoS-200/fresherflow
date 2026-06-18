@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FresherFlow - Multi-Agent AI Resume Parser & Tailor Assistant</title>
   <meta name="description" content="Sleek, multi-agent AI resume parsing, ATS job matching, and LLM-driven resume tailoring assistant for tech candidates.">
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
-  <link rel="preload" as="style" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap">
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=outfit@400,500,700,900&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=outfit@400,500,700,900&display=swap">
   <link rel="stylesheet" href="./styles.css">
   <style>
     /* GPU-safe progress bar: scaleX avoids layout triggers */
@@ -74,6 +74,12 @@
           
           <label style="margin-bottom: 8px; display: block;">Option B: Paste resume text / skills</label>
           <textarea id="resumeText" placeholder="Paste resume text here..." style="flex: 1; min-height: 250px; margin-bottom: 16px; resize: none;"></textarea>
+          
+          <div class="divider" style="margin: 8px 0 16px 0;"></div>
+          
+          <label style="margin-bottom: 8px; display: block;">Option C: Import Master CV JSON</label>
+          <input id="importJsonFile" type="file" accept=".json" style="margin-bottom: 12px;">
+          
           <div class="actions">
             <button class="btn btn-secondary" id="clearProfileBtn">Clear Profile</button>
           </div>
@@ -151,6 +157,38 @@
           </div>
         </div>
         <p class="muted small" style="margin-top:-4px; margin-bottom:12px;">Missing: <span id="missingFieldsList" style="font-weight:700; color:var(--accent);">None</span></p>
+        
+        <div class="job-selection-eligibility-container" style="background: var(--surface-3); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin: 16px 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 280px;">
+              <label for="editorJobSelect" style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 6px;">Evaluate Target Job Eligibility</label>
+              <select id="editorJobSelect" style="width: 100%;">
+                <option value="">-- Choose a job listing --</option>
+              </select>
+            </div>
+            <div id="eligibilityStatusContainer" style="display: flex; align-items: center; gap: 8px;" hidden>
+              <span style="font-size: 0.85rem; font-weight: 700;">Status:</span>
+              <span id="eligibilityStatusBadge" class="badge">Checking...</span>
+            </div>
+          </div>
+          <div id="eligibilityScorecard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;" hidden>
+            <div class="eligibility-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: var(--surface-2); text-align: center;">
+              <div class="small muted">Projects Volume</div>
+              <strong id="eligibilityProjectsVal">-</strong>
+              <div id="eligibilityProjectsStatus" class="tiny" style="margin-top: 4px;">-</div>
+            </div>
+            <div class="eligibility-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: var(--surface-2); text-align: center;">
+              <div class="small muted">Required Skills</div>
+              <strong id="eligibilitySkillsVal">-</strong>
+              <div id="eligibilitySkillsStatus" class="tiny" style="margin-top: 4px;">-</div>
+            </div>
+            <div class="eligibility-card" style="border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: var(--surface-2); text-align: center;">
+              <div class="small muted">Role Experience</div>
+              <strong id="eligibilityRoleVal">-</strong>
+              <div id="eligibilityRoleStatus" class="tiny" style="margin-top: 4px;">-</div>
+            </div>
+          </div>
+        </div>
         
         <div class="progress-container" style="background:var(--surface-3); height:8px; border-radius:999px; overflow:hidden; margin-bottom:16px; border:1px solid var(--border);">
           <div id="completionProgressBar"></div>
@@ -268,6 +306,7 @@
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-secondary" id="aiFillCVBtn" style="font-weight:800; font-size:0.88rem;">&#10024; AI Fill Missing Sections</button>
             <button class="btn btn-ghost" id="previewLatexFromCVBtn" style="font-size:0.88rem;">Preview LaTeX</button>
+            <button class="btn btn-ghost" id="exportJsonBtn" style="font-size:0.88rem;">Export JSON</button>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-secondary" id="skipCVBtn">Skip &amp; Set Nulls</button>
@@ -369,7 +408,7 @@
             <div class="divider" style="margin: 16px 0;"></div>
             <div class="ats-verify-box" style="border: 2px dashed var(--border); border-radius:16px; padding:16px; background: color-mix(in oklab, var(--primary) 6%, var(--surface-2));">
               <h4 style="margin:0 0 6px 0; font-size:0.85rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em;">ATS Verification Loop</h4>
-              <p class="muted tiny" style="margin:0 0 10px 0; line-height: 1.35;">Compile this LaTeX code on Overleaf, download the PDF, and upload it here to verify its ATS score >= 95%.</p>
+              <p class="muted tiny" style="margin:0 0 10px 0; line-height: 1.35;">Compile this LaTeX code on Overleaf, download the PDF, and upload it here to verify its ATS score >= 90%.</p>
               
               <input type="file" id="compiledPdfUpload" accept="application/pdf" style="font-size:0.8rem; margin-bottom:10px; border-radius:8px;">
               <button class="btn btn-secondary" id="verifyPdfAtsBtn" style="width:100%; font-size:0.85rem; padding: 8px 12px; font-weight:700;">Verify Compiled PDF</button>
@@ -423,14 +462,14 @@
     </div>
   </main>
 
-  <!-- Not Qualified Warning Modal (score < 95%) -->
+  <!-- Not Qualified Warning Modal (score < 90%) -->
   <div id="notQualifiedModal" class="modal-backdrop" hidden>
     <div class="modal-card card glass" style="max-width:460px; text-align:center;">
       <div style="font-size:3rem; margin-bottom:8px;">⚠️</div>
       <h3 style="margin:0 0 6px 0; color:var(--accent); font-size:1.3rem;">Resume Not Qualified</h3>
       <p class="muted small" style="margin:0 0 16px 0; line-height:1.55;">
         Your resume has a <strong><span id="nqScore">0</span>% match</strong> for this role —
-        below the recommended <strong>95%</strong> threshold.<br>
+        below the recommended <strong>90%</strong> threshold.<br>
         <span style="font-size:0.85rem; color:var(--muted); margin-top:6px; display:block;" id="nqRole"></span>
       </p>
       <div style="background: color-mix(in oklab, var(--accent) 10%, var(--surface-2)); border:1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius:14px; padding:12px 16px; margin-bottom:20px; text-align:left;">

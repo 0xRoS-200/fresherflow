@@ -41,6 +41,25 @@ class CVValidator:
         if cv.professional_summary and len(cv.professional_summary.summary) < 50:
             warnings.append("Professional summary is quite short (recommended: 50+ chars)")
 
+        # Check project counts for freshers (2-3) and experienced candidates (2+)
+        is_fresher = True
+        if cv.professional_summary and cv.professional_summary.total_experience_years >= 1.0:
+            is_fresher = False
+        elif cv.experience and len(cv.experience) > 0:
+            is_fresher = False
+
+        num_projects = len(cv.projects)
+        if is_fresher:
+            if num_projects < 2 or num_projects > 3:
+                warnings.append(
+                    f"Candidate identified as fresher. Listed {num_projects} projects (recommended: 2-3 to maintain optimal ATS score)"
+                )
+        else:
+            if num_projects < 2:
+                warnings.append(
+                    f"Candidate identified as experienced/freelancer. Listed {num_projects} projects (recommended: 2+ to maintain optimal ATS score)"
+                )
+
         # Calculate confidence score
         confidence = cls._calculate_confidence(cv)
 

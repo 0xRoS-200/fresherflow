@@ -489,10 +489,108 @@ function collectCVFromForm() {
 	return cv;
 }
 
+function populateEditorJobSelect() {
+	const select = el('editorJobSelect');
+	if (!select) return;
+	
+	const matches = getMatchedJobsList();
+	const currentVal = select.value;
+	
+	select.innerHTML = '<option value="">-- Choose a job listing --</option>';
+	matches.forEach(({ job, score }) => {
+		const option = document.createElement('option');
+		option.value = job.id;
+		option.textContent = `${job.title} at ${job.company} (${score}% match)`;
+		select.appendChild(option);
+	});
+	
+	if (currentVal && matches.some(m => m.job.id === currentVal)) {
+		select.value = currentVal;
+	} else if (state.activeApplyJob) {
+		select.value = state.activeApplyJob.id;
+	} else if (el('tailorJobSelect')?.value) {
+		select.value = el('tailorJobSelect').value;
+	}
+}
+
+function evaluateEligibility() {
+	const jobId = el('editorJobSelect').value;
+	const scorecard = el('eligibilityScorecard');
+	const container = el('eligibilityStatusContainer');
+	const badge = el('eligibilityStatusBadge');
+	
+	if (!jobId) {
+		if (scorecard) scorecard.hidden = true;
+		if (container) container.hidden = true;
+		return;
+	}
+	
+	if (scorecard) scorecard.hidden = false;
+	if (container) container.hidden = false;
+	
+	const matchRow = getMatchedJobsList().find(m => m.job.id === jobId);
+	if (!matchRow) return;
+	
+	const { job, score } = matchRow;
+	const cv = collectCVFromForm();
+	
+	// 1. Projects volume check: 2-3 for fresher, 2 for experienced/freelancer
+	const projectsCount = cv.projects ? cv.projects.length : 0;
+	const isFresher = cv.profileType === 'fresher' || cv.totalExperienceYears < 1;
+	const reqProjects = isFresher ? 3 : 2;
+	const projectsEligible = projectsCount >= reqProjects;
+	
+	const projValEl = el('eligibilityProjectsVal');
+	const projStatusEl = el('eligibilityProjectsStatus');
+	if (projValEl) projValEl.textContent = `${projectsCount}/${reqProjects}`;
+	if (projStatusEl) {
+		projStatusEl.textContent = projectsEligible ? "✓ Volume Met" : `✗ Inadequate (Need ${reqProjects})`;
+		projStatusEl.style.color = projectsEligible ? "var(--success)" : "var(--danger)";
+	}
+	
+	// 2. Required skills check (threshold: 70%)
+	const gap = calculateSkillsGap(job);
+	const totalSkillsCount = gap.jobKeywords.length;
+	const matchedSkillsCount = gap.matched.length;
+	const skillsPct = totalSkillsCount > 0 ? Math.round((matchedSkillsCount / totalSkillsCount) * 100) : 100;
+	const skillsEligible = skillsPct >= 70;
+	
+	const skillsValEl = el('eligibilitySkillsVal');
+	const skillsStatusEl = el('eligibilitySkillsStatus');
+	if (skillsValEl) skillsValEl.textContent = `${skillsPct}%`;
+	if (skillsStatusEl) {
+		skillsStatusEl.textContent = skillsEligible ? "✓ Skills Aligned" : `✗ Gap Found (${gap.missing.slice(0, 2).join(', ')})`;
+		skillsStatusEl.style.color = skillsEligible ? "var(--success)" : "var(--danger)";
+	}
+	
+	// 3. Rolefit check
+	const jobTitleLower = job.title.toLowerCase();
+	const cvTargetRoleLower = (cv.targetRole || "").toLowerCase();
+	const isRoleMatch = cvTargetRoleLower && (jobTitleLower.includes(cvTargetRoleLower) || cvTargetRoleLower.includes(jobTitleLower) || score >= 75);
+	
+	const roleValEl = el('eligibilityRoleVal');
+	const roleStatusEl = el('eligibilityRoleStatus');
+	if (roleValEl) roleValEl.textContent = isRoleMatch ? "Strong" : "Weak";
+	if (roleStatusEl) {
+		roleStatusEl.textContent = isRoleMatch ? "✓ Role Fits" : "✗ Role Discrepancy";
+		roleStatusEl.style.color = isRoleMatch ? "var(--success)" : "var(--danger)";
+	}
+	
+	// Overall eligibility status
+	const isEligible = projectsEligible && skillsEligible && isRoleMatch;
+	if (badge) {
+		badge.textContent = isEligible ? "Eligible ✓" : "Review Needed ⚠️";
+		badge.style.background = isEligible ? "var(--success)" : "var(--accent)";
+		badge.style.color = isEligible ? "#ffffff" : "var(--primary-text)";
+	}
+}
+
 function populateCVEditor(cv) {
 	if (!cv) return;
 	isPopulating = true;
 	try {
+		populateEditorJobSelect();
+		evaluateEligibility();
 		el('cvName').value = cv.name || "";
 		el('cvEmail').value = cv.email || "";
 		el('cvPhone').value = cv.phone || "";
@@ -677,6 +775,13 @@ function onTailorJobSelectChange() {
 	const detailsCard = el('tailorJobDetails');
 	const noJobMsg = el('tailorNoJobMessage');
 	
+	// Sync back to editor selector
+	const editorSelect = el('editorJobSelect');
+	if (editorSelect && editorSelect.value !== jobId) {
+		editorSelect.value = jobId;
+		evaluateEligibility();
+	}
+	
 	if (!jobId) {
 		if (detailsCard) detailsCard.hidden = true;
 		if (noJobMsg) noJobMsg.hidden = false;
@@ -716,16 +821,61 @@ function renderResumeSheet(cv, tailoredData = null) {
 	let latexCode = '';
 	if (tailoredData && tailoredData.latex_code) {
 		latexCode = tailoredData.latex_code;
-	} else {
-		latexCode = generateLatexCode(cv, tailoredData);
 	}
 
 	const latexArea = el('latexCodeArea');
 	if (latexArea) {
-		latexArea.value = latexCode;
+		latexArea.value = latexCode || 'Select a target job and click "Tailor Resume" to generate LaTeX and preview PDF.';
 	}
 	
-	compilePdfPreview(latexCode);
+	if (latexCode) {
+		compilePdfPreview(latexCode);
+	} else {
+		const iframe = el('pdfPreviewFrame');
+		if (iframe) {
+			iframe.srcdoc = `
+				<html>
+				<head>
+					<style>
+						body {
+							font-family: 'Outfit', -apple-system, sans-serif;
+							display: flex;
+							flex-direction: column;
+							align-items: center;
+							justify-content: center;
+							height: 100vh;
+							margin: 0;
+							background: #0f172a;
+							color: #94a3b8;
+							text-align: center;
+							padding: 24px;
+							box-sizing: border-box;
+						}
+						h2 {
+							color: #f1f5f9;
+							margin-top: 0;
+							margin-bottom: 8px;
+							font-size: 1.5rem;
+							letter-spacing: -0.025em;
+						}
+						p {
+							max-width: 400px;
+							font-size: 0.95rem;
+							line-height: 1.5;
+							margin: 0;
+						}
+					</style>
+				</head>
+				<body>
+					<h2>No Tailored Resume Generated</h2>
+					<p>Please select a target job from the dropdown on the left and click "Tailor Resume using LLM" to generate your tailored resume and preview it here.</p>
+				</body>
+				</html>
+			`;
+		}
+		const loader = el('resumeSheetLoader');
+		if (loader) loader.hidden = true;
+	}
 }
 
 async function compilePdfPreview(latexCode) {
@@ -1375,9 +1525,9 @@ function showApplyPromptModal(jobId, matchScore) {
 	
 	state.activeApplyJob = selectJob;
 
-	// If score < 95, show the "not qualified" warning modal instead
+	// If score < 90, show the "not qualified" warning modal instead
 	const score = matchScore !== undefined ? matchScore : (state.lastJobScores && state.lastJobScores[jobId]) || 100;
-	if (score < 95) {
+	if (score < 90) {
 		const notQualModal = el('notQualifiedModal');
 		if (notQualModal) {
 			const nqScore = el('nqScore');
@@ -1402,7 +1552,7 @@ function showApplyPromptModal(jobId, matchScore) {
 		return;
 	}
 
-	// Score >= 95: show normal apply modal
+	// Score >= 90: show normal apply modal
 	const modal = el('applyPromptModal');
 	if (modal) modal.hidden = false;
 	
@@ -1418,7 +1568,7 @@ function showApplyPromptModal(jobId, matchScore) {
 	
 	if (!isVerified) {
 		if (titleEl) titleEl.textContent = "🔒 Application Locked";
-		if (descEl) descEl.textContent = "To apply for this role, you must tailor your resume for this specific position and verify it by compiling the LaTeX code on Overleaf and uploading the PDF. An ATS score of >= 95% is required.";
+		if (descEl) descEl.textContent = "To apply for this role, you must tailor your resume for this specific position and verify it by compiling the LaTeX code on Overleaf and uploading the PDF. An ATS score of >= 90% is required.";
 		if (promptWrapper) promptWrapper.style.display = 'none';
 		if (confirmBtn) {
 			confirmBtn.textContent = "Go to Tailor Assistant";
@@ -1873,7 +2023,7 @@ function render(){const filters=buildFilters(); renderChips(filters); let rows; 
 		const isVerified = state.verifiedJobs && state.verifiedJobs.has(job.id);
 		const applyBtnText = isVerified ? "Apply on source" : "Apply on source";
 
-		return `<article class="job-card${job.isNew ? ' job-card-new' : ''}"><div class="job-head"><div><h3>${escapeHtml(job.title)}</h3><div class="muted small">${escapeHtml(job.company)} · ${escapeHtml(job.location)} · ${escapeHtml(job.mode)} · ${escapeHtml(job.jobType)}</div></div><div class="score${score < 95 ? ' score-low' : ' score-high'}">${score}%</div></div><div class="meta">${newBadge}<span class="badge">${escapeHtml(job.source)}</span><span class="badge">Posted ${job.postedDaysAgo ?? '?'}d ago</span><span class="badge salary">${escapeHtml(job.salary || 'Salary not listed')}</span></div><ul class="job-highlights">${highlights.map(h=>`<li>${escapeHtml(h)}</li>`).join('')}</ul>${atsAnalytics}<p class="why small">Fit: ${escapeHtml(reasons.join(' · '))}</p><div class="chips">${(job.tags||[]).slice(0,6).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('')}</div><div class="job-actions" style="margin-top:1rem"><button class="btn btn-primary" onclick="showApplyPromptModal('${job.id}', ${score})">${applyBtnText}</button><button class="btn btn-secondary" onclick="toggleSave(${JSON.stringify(job.id)})">${state.saved.has(job.id)?'Unsave':'Save'}</button><button class="btn btn-ghost" onclick="tailorResumeForJob('${job.id}')" style="margin-left:auto;">Tailor Resume</button></div></article>`;
+		return `<article class="job-card${job.isNew ? ' job-card-new' : ''}"><div class="job-head"><div><h3>${escapeHtml(job.title)}</h3><div class="muted small">${escapeHtml(job.company)} · ${escapeHtml(job.location)} · ${escapeHtml(job.mode)} · ${escapeHtml(job.jobType)}</div></div><div class="score${score < 90 ? ' score-low' : ' score-high'}">${score}%</div></div><div class="meta">${newBadge}<span class="badge">${escapeHtml(job.source)}</span><span class="badge">Posted ${job.postedDaysAgo ?? '?'}d ago</span><span class="badge salary">${escapeHtml(job.salary || 'Salary not listed')}</span></div><ul class="job-highlights">${highlights.map(h=>`<li>${escapeHtml(h)}</li>`).join('')}</ul>${atsAnalytics}<p class="why small">Fit: ${escapeHtml(reasons.join(' · '))}</p><div class="chips">${(job.tags||[]).slice(0,6).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('')}</div><div class="job-actions" style="margin-top:1rem"><button class="btn btn-primary" onclick="showApplyPromptModal('${job.id}', ${score})">${applyBtnText}</button><button class="btn btn-secondary" onclick="toggleSave(${JSON.stringify(job.id)})">${state.saved.has(job.id)?'Unsave':'Save'}</button><button class="btn btn-ghost" onclick="tailorResumeForJob('${job.id}')" style="margin-left:auto;">Tailor Resume</button></div></article>`;
 	}).join('');
 }
 function toggleSave(id){if(state.saved.has(id)) state.saved.delete(id); else state.saved.add(id); render();}
@@ -2357,6 +2507,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 	el('addExperienceBtn')?.addEventListener('click', () => addFormListItem('experience'));
 	el('addProjectBtn')?.addEventListener('click', () => addFormListItem('projects'));
 	el('addCertificationBtn')?.addEventListener('click', () => addFormListItem('certifications'));
+	el('importJsonFile')?.addEventListener('change', onImportJsonFileChange);
+	el('exportJsonBtn')?.addEventListener('click', exportMasterCVJson);
+	
+	el('editorJobSelect')?.addEventListener('change', () => {
+		evaluateEligibility();
+		const jobId = el('editorJobSelect').value;
+		const tailorSelect = el('tailorJobSelect');
+		if (tailorSelect && tailorSelect.value !== jobId) {
+			tailorSelect.value = jobId;
+			onTailorJobSelectChange();
+		}
+	});
 
 	el('aiFillCVBtn')?.addEventListener('click', () => {
 		const cv = collectCVFromForm();
@@ -2382,7 +2544,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 		state.masterCV = cv;
 		location.hash = '#/tailor';
 		setTimeout(() => {
-			renderResumeSheet(cv, state.tailoredData);
+			const masterLatex = generateLatexCode(cv, null);
+			renderResumeSheet(cv, { latex_code: masterLatex });
 			showA4Preview();
 		}, 200);
 	});
@@ -2532,16 +2695,16 @@ async function verifyPdfAts() {
 		if (statusDiv) statusDiv.hidden = false;
 		if (scoreSpan) scoreSpan.textContent = `${score}%`;
 		
-		if (score >= 95) {
+		if (score >= 90) {
 			state.verifiedJobs.add(jobId);
 			if (scoreSpan) scoreSpan.style.color = '#10b981';
 			if (textSpan) textSpan.textContent = 'Verification Passed! Job unlocked.';
-			consoleLog(`[System] Verification Passed! ATS Score: ${score}% >= 95%. Application is now unlocked.`, 'success');
+			consoleLog(`[System] Verification Passed! ATS Score: ${score}% >= 90%. Application is now unlocked.`, 'success');
 			render();
 		} else {
 			if (scoreSpan) scoreSpan.style.color = '#ef4444';
-			if (textSpan) textSpan.textContent = 'Verification Failed (< 95%). Please make sure you tailored and compiled correctly.';
-			consoleLog(`[System] Verification Failed! ATS Score: ${score}% < 95%. Re-tailoring advised.`, 'warning');
+			if (textSpan) textSpan.textContent = 'Verification Failed (< 90%). Please make sure you tailored and compiled correctly.';
+			consoleLog(`[System] Verification Failed! ATS Score: ${score}% < 90%. Re-tailoring advised.`, 'warning');
 		}
 	} catch (err) {
 		console.error(err);
@@ -2572,4 +2735,62 @@ function calculatePdfAtsScore(pdfText, job) {
 	}
 	
 	return Math.max(0, Math.min(100, score));
+}
+
+async function onImportJsonFileChange(e) {
+	const input = e.target;
+	const file = input.files && input.files[0];
+	if (!file) return;
+	
+	try {
+		consoleLog('[System] Reading imported JSON file...', 'system');
+		const text = await readFileAsText(file);
+		const parsed = JSON.parse(text);
+		
+		if (!parsed || typeof parsed !== 'object') {
+			throw new Error("Invalid JSON format. Expected an object.");
+		}
+		
+		// Map and extract skills
+		if (parsed.skills && Array.isArray(parsed.skills)) {
+			state.extractedSkills = unique(parsed.skills.map(s => typeof s === 'object' ? s.name : s));
+		} else {
+			state.extractedSkills = [];
+		}
+		
+		state.masterCV = parsed;
+		
+		consoleLog('[System] Successfully imported Master CV JSON!', 'success');
+		alert("Master CV JSON imported successfully!");
+		
+		// Toggle view to editor and populate it
+		toggleProfileView(true);
+		populateCVEditor(state.masterCV);
+		
+	} catch (err) {
+		console.error(err);
+		alert(`Failed to import JSON: ${err.message}`);
+		consoleLog(`[System] Error importing JSON: ${err.message}`, 'warning');
+		input.value = '';
+	}
+}
+
+function exportMasterCVJson() {
+	const cv = collectCVFromForm();
+	state.masterCV = cv;
+	
+	if (!cv || (!cv.name && !cv.email && !cv.phone)) {
+		alert("Your CV is empty. Please enter or parse some candidate profile details first before exporting.");
+		return;
+	}
+	
+	const jsonContent = JSON.stringify(cv, null, 2);
+	const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+	const a = document.createElement('a');
+	a.href = URL.createObjectURL(blob);
+	const filename = (cv.name ? cv.name.replace(/\s+/g, '_').toLowerCase() : 'master_cv') + '.json';
+	a.download = filename;
+	a.click();
+	URL.revokeObjectURL(a.href);
+	consoleLog(`[System] Exported Master CV JSON as ${filename}.`, 'success');
 }
