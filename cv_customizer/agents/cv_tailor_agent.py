@@ -67,6 +67,15 @@ class CVTailorAgent:
                 max_tokens=8000
             )
             latex_code = response.content
+            # Aggressively strip markdown formatting if the model still includes it
+            if "```latex" in latex_code:
+                latex_code = latex_code.split("```latex")[1].split("```")[0]
+            elif "```tex" in latex_code:
+                latex_code = latex_code.split("```tex")[1].split("```")[0]
+            elif "```" in latex_code:
+                latex_code = latex_code.split("```")[1].split("```")[0]
+            
+            latex_code = latex_code.strip()
             return latex_code
         except Exception as e:
             logger.error(f"LaTeX generation failed: {e}")
@@ -192,7 +201,8 @@ Requirements:
 - Clear sections: Contact, Summary, Experience, Skills, Education, Projects
 - Projects MUST contain accomplishments that strictly follow the syntax: Action Verb + Quantitative Metric + Impact (e.g. "Developed... reducing execution time by 60% and decreasing team workload by 30%").
 - Proper LaTeX syntax. Ensure all percentage symbols are escaped as \\% and all ampersands are escaped as \\&.
-- Return complete, compilable LaTeX code starting directly with \\documentclass. Do not wrap the code in markdown formatting or backticks.
+- Return ONLY complete, compilable LaTeX code. Do NOT include ANY introductory or concluding text.
+- Do NOT wrap the code in markdown formatting or backticks (e.g., no ```latex). The output MUST start directly with \\documentclass and end with \\end{document}.
 
 TAILORED CONTENT TO GENERATE LATEX:
 {content_str}

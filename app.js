@@ -833,6 +833,7 @@ function renderResumeSheet(cv, tailoredData = null) {
 	} else {
 		const iframe = el('pdfPreviewFrame');
 		if (iframe) {
+			iframe.removeAttribute('src');
 			iframe.srcdoc = `
 				<html>
 				<head>
@@ -919,6 +920,7 @@ async function compilePdfPreview(latexCode) {
 		const blob = await resp.blob();
 		const pdfUrl = URL.createObjectURL(blob);
 		if (iframe) {
+			iframe.removeAttribute('srcdoc');
 			iframe.src = pdfUrl;
 			iframe.style.display = 'block';
 		}
@@ -927,6 +929,7 @@ async function compilePdfPreview(latexCode) {
 		consoleLog(`[PDF Compiler] ❌ Compilation failed: ${e.message}`, 'danger');
 		alert(`LaTeX compilation failed: ${e.message}`);
 		if (iframe) {
+			iframe.removeAttribute('srcdoc');
 			iframe.src = '';
 		}
 	} finally {

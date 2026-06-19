@@ -441,21 +441,27 @@ def run_llm_tailor(cv_data, job_data, matched_keywords=None, missing_keywords=No
 			print(f"[Tailor] Ollama generation failed: {e}. Falling back to Gemini...")
 
 	if not latex_code:
-		print("[Tailor] Using Gemini for LaTeX generation...")
+		print("[Tailor] Using Gemini/Groq for LaTeX generation...")
 		latex_code = invoke_llm_with_fallback(
 			system_message=_RESUME_STRATEGIST_SYSTEM_PROMPT,
 			prompt_message=json.dumps(candidate_json, indent=2),
 			temperature=0.15,
-			allowed_providers=["gemini"]
+			allowed_providers=["gemini", "groq"]
 		).strip()
 
-	# Strip markdown fences if the LLM wrapped the output
-	if latex_code.startswith('```'):
-		lines = latex_code.split('\n')
-		latex_code = '\n'.join(
-			line for line in lines
-			if not line.strip().startswith('```')
-		).strip()
+	# Extract latex from markdown fences if the LLM wrapped the output, even with conversational text
+	import re
+	if "```latex" in latex_code:
+		latex_code = latex_code.split("```latex")[1].split("```")[0]
+	elif "```tex" in latex_code:
+		latex_code = latex_code.split("```tex")[1].split("```")[0]
+	elif "```" in latex_code:
+		# If there are multiple blocks, take the largest or the first. Here we assume one code block.
+		match = re.search(r'```(.*?)```', latex_code, re.DOTALL)
+		if match:
+			latex_code = match.group(1)
+	
+	latex_code = latex_code.strip()
 
 	print(f"[Tailor] LaTeX generated ({len(latex_code)} chars). Extracting preview data...")
 
