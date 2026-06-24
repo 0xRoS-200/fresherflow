@@ -33,13 +33,18 @@
   <div class="bg-orbs"></div>
   <header class="topbar">
     <div class="container topbar-inner">
-      <div class="brand">
-        <div class="logo">FF</div>
+      <a href="#/landing" class="brand">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-text); transform: rotate(90deg); will-change: transform; transition: transform var(--dur-normal) var(--ease-spring);">
+            <path d="M6 8l6-6 6 6"/>
+            <path d="M6 16l6 6 6-6"/>
+          </svg>
+        </div>
         <div><div class="brand-title">FresherFlow</div><div class="muted small">Fresher job search</div></div>
-      </div>
+      </a>
       
       <nav class="nav-tabs" id="navTabs">
-        <a href="#/parse" class="nav-tab active" id="tab-parse">Parser</a>
+        <a href="#/parse" class="nav-tab" id="tab-parse">Parser</a>
         <a href="#/editor" class="nav-tab" id="tab-editor">CV Builder</a>
         <a href="#/matches" class="nav-tab" id="tab-matches">Job Matches</a>
         <a href="#/tailor" class="nav-tab" id="tab-tailor">Tailor Assistant</a>
@@ -53,8 +58,98 @@
   </header>
 
   <main class="container">
+    <!-- LANDING PAGE -->
+    <div id="page-landing" class="page-section active">
+      <section class="landing-hero">
+        <div class="landing-badge">
+          <span class="pulse-dot"></span>
+          Multi-Agent AI Job Orchestration V2.0
+        </div>
+        <h1 class="landing-title">Accelerate Your Entry Into Tech With <span class="gradient-text">FresherFlow</span></h1>
+        <p class="landing-subtitle">The first resume-tailoring agent workflow that parses resume text, matches candidate skills with live India tech opportunities, and builds beautiful ATS-optimized LaTeX resumes in seconds.</p>
+        <div class="landing-actions">
+          <a href="#/parse" class="btn btn-primary btn-large">Launch Application &rarr;</a>
+        </div>
+      </section>
+
+      <!-- Glassmorphic Feature Cards Grid -->
+      <section class="landing-grid">
+        <!-- Card 1: Multi-Agent Parser -->
+        <div class="landing-card card glass">
+          <div class="card-icon-wrapper">
+            <span class="card-icon">📄</span>
+          </div>
+          <h3>Parser Agent</h3>
+          <p>Upload your resume in PDF/DOCX or paste raw text. Our LangGraph-powered parse node instantly extracts skills, categorizes experience, and constructs a structured profile.</p>
+          <ul class="card-bullets">
+            <li>✓ Auto Skill Classification</li>
+            <li>✓ Profile Type Determination</li>
+            <li>✓ Interactive Skill Chip Cloud</li>
+          </ul>
+        </div>
+
+        <!-- Card 2: ATS Matcher -->
+        <div class="landing-card card glass">
+          <div class="card-icon-wrapper">
+            <span class="card-icon">🔎</span>
+          </div>
+          <h3>Job Matcher</h3>
+          <p>Cross-reference your extracted profile with real-time entry-level India tech jobs. Sort by ML-based relevance matching or location priority automatically.</p>
+          <ul class="card-bullets">
+            <li>✓ Real-Time Job Feed Synced</li>
+            <li>✓ India Tech Hubs (Bengaluru, Pune)</li>
+            <li>✓ ATS Gap Analysis Analytics</li>
+          </ul>
+        </div>
+
+        <!-- Card 3: Interactive Tailor -->
+        <div class="landing-card card glass">
+          <div class="card-icon-wrapper">
+            <span class="card-icon">👔</span>
+          </div>
+          <h3>Tailor Assistant</h3>
+          <p>Align resume summary and achievements to specific job description keywords. Generates high-fidelity LaTeX documents ready for Overleaf compile.</p>
+          <ul class="card-bullets">
+            <li>✓ Interactive PDF Preview</li>
+            <li>✓ One-click Overleaf Export</li>
+            <li>✓ ATS Score Verification (>=90%)</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Full-Width Interactive Flow Showcase -->
+      <section class="flow-showcase card glass">
+        <div class="showcase-content">
+          <h2>The End-to-End Orchestration Flow</h2>
+          <p class="muted">Experience how the Parser, Matcher, and Tailor work together to secure your dream role.</p>
+          <div class="showcase-steps">
+            <div class="showcase-step">
+              <div class="step-num">1</div>
+              <h4>Upload Profile</h4>
+              <p class="small muted">Candidate inputs resume, unlocking matching capabilities.</p>
+            </div>
+            <div class="showcase-arrow">&rarr;</div>
+            <div class="showcase-step">
+              <div class="step-num">2</div>
+              <h4>ML Match Check</h4>
+              <p class="small muted">System filters entry-level jobs and scores match quality.</p>
+            </div>
+            <div class="showcase-arrow">&rarr;</div>
+            <div class="showcase-step">
+              <div class="step-num">3</div>
+              <h4>ATS Optimization</h4>
+              <p class="small muted">LLM generates custom LaTeX and runs verification checks.</p>
+            </div>
+          </div>
+          <div style="margin-top: 32px;">
+            <a href="#/parse" class="btn btn-secondary">Get Started Now</a>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- PAGE 1: PARSER & AGENT WORKFLOW -->
-    <div id="page-parse" class="page-section active">
+    <div id="page-parse" class="page-section">
       <section class="hero card glass" style="margin-bottom: 22px;">
         <div>
           <p class="eyebrow">Best matches first</p>

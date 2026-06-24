@@ -1535,6 +1535,264 @@ select option {
   vertical-align: middle;
 }
 
+/* ============================================================
+   Landing Page & Premium UI Enhancements
+   ============================================================ */
+
+/* Logo spin micro-animation */
+.brand:hover .logo svg {
+  transform: rotate(450deg) scale(1.1) !important;
+}
+
+/* Landing Page Layout */
+#page-landing {
+  display: none;
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+  will-change: opacity, transform;
+}
+
+#page-landing.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Landing Hero Section */
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.landing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in oklab, var(--primary) 12%, var(--surface-3));
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary);
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+}
+
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--primary);
+  border-radius: 50%;
+  animation: pulse-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+.landing-title {
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  font-family: 'Outfit', var(--font);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="dark"] .gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.landing-subtitle {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 760px;
+  margin: 0 auto 32px auto;
+}
+
+.btn-large {
+  padding: 14px 28px;
+  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  box-shadow: 0 8px 30px color-mix(in oklab, var(--primary) 25%, transparent);
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-spring);
+}
+
+.btn-large:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 14px 36px color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
+/* Feature Grid */
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+  margin-bottom: 60px;
+}
+
+.landing-card {
+  padding: 32px;
+  transition: transform var(--dur-normal) var(--ease-spring), box-shadow var(--dur-normal) var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-hover);
+}
+
+.card-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--primary) 20%, transparent), color-mix(in oklab, var(--accent) 15%, transparent));
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+}
+
+.card-icon {
+  font-size: 1.6rem;
+}
+
+.landing-card h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.landing-card p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.card-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.95;
+}
+
+/* Full Width Showcase Card */
+.flow-showcase {
+  padding: 56px 40px;
+  text-align: center;
+  margin-bottom: 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+.flow-showcase h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.showcase-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 48px;
+  margin-bottom: 16px;
+}
+
+.showcase-step {
+  flex: 1;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 24px 20px;
+  text-align: center;
+  transition: transform var(--dur-normal) var(--ease-spring), border-color var(--dur-normal) var(--ease-spring);
+}
+
+.showcase-step:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-text);
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 0.9rem;
+  margin: 0 auto 16px auto;
+  box-shadow: 0 4px 12px color-mix(in oklab, var(--primary) 30%, transparent);
+}
+
+.showcase-step h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.showcase-arrow {
+  font-size: 1.8rem;
+  color: var(--primary);
+  font-weight: 900;
+  opacity: 0.8;
+  user-select: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .showcase-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .showcase-arrow {
+    transform: rotate(90deg);
+    margin: 8px 0;
+  }
+}
+
 /* ── Hidden Attribute overrides to prevent display override conflicts ── */
 [hidden],
 .resume-sheet-loader[hidden] {

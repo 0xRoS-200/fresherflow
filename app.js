@@ -2420,18 +2420,18 @@ function resetFilters(){el('resumeText').value=''; el('resumeFile').value=''; el
 function toggleTheme(){document.documentElement.dataset.theme = document.documentElement.dataset.theme==='dark' ? 'light' : 'dark';}
 /* --- SPA Router --- */
 function updateRoute() {
-	const hash = location.hash || '#/parse';
+	const hash = location.hash || '#/landing';
 	
 	// Access Guard: Block other pages if masterCV doesn't exist
 	const hasCV = state.masterCV && (state.masterCV.name || state.extractedSkills.length > 0);
 	if (!hasCV && (hash === '#/editor' || hash === '#/matches' || hash === '#/tailor')) {
 		alert("Please upload or paste your CV/resume first to unlock CV Builder, Matches, and Tailor Assistant.");
-		location.hash = '#/parse';
+		location.hash = '#/landing';
 		return;
 	}
 	
-	const sections = ['page-parse', 'page-editor', 'page-matches', 'page-tailor'];
-	const tabs = ['tab-parse', 'tab-editor', 'tab-matches', 'tab-tailor'];
+	const sections = ['page-landing', 'page-parse', 'page-editor', 'page-matches', 'page-tailor'];
+	const tabs = ['tab-landing', 'tab-parse', 'tab-editor', 'tab-matches', 'tab-tailor'];
 	
 	sections.forEach(id => {
 		const sectionEl = el(id);
@@ -2443,21 +2443,40 @@ function updateRoute() {
 		if (tabEl) tabEl.classList.remove('active');
 	});
 	
-	let activeSectionId = 'page-parse';
-	let activeTabId = 'tab-parse';
+	let activeSectionId = 'page-landing';
+	let activeTabId = 'tab-landing';
 	
-	if (hash === '#/editor') {
-		activeSectionId = 'page-editor';
-		activeTabId = 'tab-editor';
-		populateCVEditor(state.masterCV);
-	} else if (hash === '#/matches') {
-		activeSectionId = 'page-matches';
-		activeTabId = 'tab-matches';
-		render();
-	} else if (hash === '#/tailor') {
-		activeSectionId = 'page-tailor';
-		activeTabId = 'tab-tailor';
-		updateTailorPageSelect();
+	const navTabs = el('navTabs');
+	if (hash === '#/landing' || hash === '#/') {
+		activeSectionId = 'page-landing';
+		activeTabId = 'tab-landing';
+		if (navTabs) {
+			navTabs.style.opacity = '0';
+			navTabs.style.pointerEvents = 'none';
+			navTabs.style.transition = 'opacity var(--dur-normal) var(--ease-spring)';
+		}
+	} else {
+		if (navTabs) {
+			navTabs.style.opacity = '1';
+			navTabs.style.pointerEvents = 'auto';
+			navTabs.style.transition = 'opacity var(--dur-normal) var(--ease-spring)';
+		}
+		if (hash === '#/parse') {
+			activeSectionId = 'page-parse';
+			activeTabId = 'tab-parse';
+		} else if (hash === '#/editor') {
+			activeSectionId = 'page-editor';
+			activeTabId = 'tab-editor';
+			populateCVEditor(state.masterCV);
+		} else if (hash === '#/matches') {
+			activeSectionId = 'page-matches';
+			activeTabId = 'tab-matches';
+			render();
+		} else if (hash === '#/tailor') {
+			activeSectionId = 'page-tailor';
+			activeTabId = 'tab-tailor';
+			updateTailorPageSelect();
+		}
 	}
 	
 	const activeSec = el(activeSectionId);
