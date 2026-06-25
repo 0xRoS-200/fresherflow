@@ -2423,7 +2423,7 @@ function updateRoute() {
 	const hash = location.hash || '#/landing';
 	
 	// Access Guard: Block other pages if masterCV doesn't exist
-	const hasCV = state.masterCV && (state.masterCV.name || state.extractedSkills.length > 0);
+	const hasCV = !!state.masterCV;
 	if (!hasCV && (hash === '#/editor' || hash === '#/matches' || hash === '#/tailor')) {
 		alert("Please upload or paste your CV/resume first to unlock CV Builder, Matches, and Tailor Assistant.");
 		location.hash = '#/landing';

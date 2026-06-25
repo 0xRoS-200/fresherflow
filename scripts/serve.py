@@ -737,196 +737,202 @@ class FresherFlowHandler(SimpleHTTPRequestHandler):
 		self.wfile.write(body)
 
 	def do_GET(self):
-		if self.path == '/api/jobs' or self.path.startswith('/api/jobs?'):
-			try:
-				force = 'refresh=1' in self.path or 'force=1' in self.path
-				if force:
-					payload = refresh_cache(force=True)
-				else:
-					payload = get_jobs_payload()
-					if is_cache_stale():
-						import threading
-						threading.Thread(target=refresh_cache, kwargs={'force': True}, daemon=True).start()
-				self._send_json(200, payload)
-			except Exception as exc:
-				self._send_json(500, {'jobs': [], 'sources': [], 'errors': [str(exc)]})
-			return
-		return super().do_GET()
+		try:
+			if self.path == '/api/jobs' or self.path.startswith('/api/jobs?'):
+				try:
+					force = 'refresh=1' in self.path or 'force=1' in self.path
+					if force:
+						payload = refresh_cache(force=True)
+					else:
+						payload = get_jobs_payload()
+						if is_cache_stale():
+							import threading
+							threading.Thread(target=refresh_cache, kwargs={'force': True}, daemon=True).start()
+					self._send_json(200, payload)
+				except Exception as exc:
+					self._send_json(500, {'jobs': [], 'sources': [], 'errors': [str(exc)]})
+				return
+			return super().do_GET()
+		except ConnectionError as ce:
+			print(f"[serve.py] Connection error during GET {self.path}: {ce}")
 
 	def do_POST(self):
-		if self.path not in ('/api/parse-resume', '/api/tailor-resume', '/api/ai-fill-cv', '/api/job-keywords', '/api/compile-pdf'):
-			self.send_error(404, 'Not found')
-			return
-
-		if self.path == '/api/job-keywords':
-			try:
-				length = int(self.headers.get('Content-Length', '0') or 0)
-				post_data = self.rfile.read(length).decode('utf-8')
-				payload = json.loads(post_data)
-				cv_data = payload.get('cv', {})
-				job_data = payload.get('job', {})
-				result = extract_job_keywords(cv_data, job_data)
-				self._send_json(200, result)
-			except Exception as exc:
-				self._send_json(400, {'error': str(exc)})
-			return
-
-		if self.path == '/api/ai-fill-cv':
-			try:
-				length = int(self.headers.get('Content-Length', '0') or 0)
-				post_data = self.rfile.read(length).decode('utf-8')
-				payload = json.loads(post_data)
-				cv_data = payload.get('cv', {})
-				resume_text = payload.get('resume_text', '')
-
-				# Validate that there is relevant info to base suggestions on
-				skills = cv_data.get('skills', [])
-				experience = cv_data.get('experience', [])
-				education = cv_data.get('education', [])
-				if not skills and not experience and not education:
-					raise ValueError("No profile details found (skills, experience, and education are empty). Please enter some information first.")
-
-				result = run_ai_fill_cv(cv_data, resume_text)
-				self._send_json(200, result)
-			except Exception as exc:
-				self._send_json(400, {'error': str(exc)})
-			return
-
-
-
-		if self.path == '/api/tailor-resume':
-			try:
-				length = int(self.headers.get('Content-Length', '0') or 0)
-				post_data = self.rfile.read(length).decode('utf-8')
-				payload = json.loads(post_data)
-				cv_data = payload.get('cv')
-				job_data = payload.get('job')
-				# Accept pre-computed keywords from frontend (optional)
-				matched_kw = payload.get('matched_keywords')
-				missing_kw = payload.get('missing_keywords')
-
-				if not cv_data or not job_data:
-					raise ValueError('Both cv and job payloads are required.')
-
-				tailor_result = run_llm_tailor(cv_data, job_data, matched_kw, missing_kw)
-				self._send_json(200, tailor_result)
-			except Exception as exc:
-				self._send_json(400, {'error': str(exc)})
-			return
-
-		if self.path == '/api/compile-pdf':
-			try:
-				length = int(self.headers.get('Content-Length', '0') or 0)
-				post_data = self.rfile.read(length).decode('utf-8')
-				payload = json.loads(post_data)
-				latex_code = payload.get('latex_code')
-				if not latex_code:
-					raise ValueError('latex_code is required.')
-
-				import base64
-				max_attempts = 3
-				pdf_data = None
-				last_error = None
-				healed_latex = latex_code
-
-				for attempt in range(1, max_attempts + 1):
-					try:
-						if attempt > 1:
-							print(f"[serve.py] Compiling self-healed LaTeX (Attempt {attempt})...")
-						pdf_data = compile_latex_to_pdf(healed_latex)
-						break
-					except Exception as exc:
-						last_error = str(exc)
-						if attempt < max_attempts:
-							print(f"[serve.py] Attempt {attempt} failed: {last_error}. Initiating self-healing...")
-							try:
-								healed_latex = heal_latex_code(healed_latex, last_error)
-							except Exception as heal_exc:
-								print(f"[serve.py] Self-healing request failed: {heal_exc}")
-								raise exc
-						else:
-							raise exc
-
-				if not pdf_data:
-					raise RuntimeError('Failed to compile LaTeX to PDF.')
-
-				self.send_response(200)
-				self.send_header('Content-Type', 'application/pdf')
-				self.send_header('Content-Length', str(len(pdf_data)))
-				self.send_header('Cache-Control', 'no-store')
-				# Send the final (potentially healed) LaTeX code in headers so frontend can sync
-				encoded_latex = base64.b64encode(healed_latex.encode('utf-8')).decode('utf-8')
-				self.send_header('X-Healed-Latex', encoded_latex)
-				self.send_header('Access-Control-Expose-Headers', 'X-Healed-Latex')
-				self.end_headers()
-				self.wfile.write(pdf_data)
-			except Exception as exc:
-				self._send_json(400, {'error': str(exc)})
-			return
-
 		try:
-			ctype = self.headers.get('Content-Type', '')
-			if 'multipart/form-data' not in ctype:
-				raise ValueError('Expected multipart form upload.')
-			length = int(self.headers.get('Content-Length', '0') or 0)
-			form = cgi.FieldStorage(
-				fp=self.rfile,
-				headers=self.headers,
-				environ={
-					'REQUEST_METHOD': 'POST',
-					'CONTENT_TYPE': ctype,
-					'CONTENT_LENGTH': str(length),
-				},
-			)
-			field = form['file']
-			if isinstance(field, list):
-				field = field[0]
+			if self.path not in ('/api/parse-resume', '/api/tailor-resume', '/api/ai-fill-cv', '/api/job-keywords', '/api/compile-pdf'):
+				self.send_error(404, 'Not found')
+				return
 
-			if field is None or getattr(field, 'file', None) is None:
-				raise ValueError('No file uploaded.')
+			if self.path == '/api/job-keywords':
+				try:
+					length = int(self.headers.get('Content-Length', '0') or 0)
+					post_data = self.rfile.read(length).decode('utf-8')
+					payload = json.loads(post_data)
+					cv_data = payload.get('cv', {})
+					job_data = payload.get('job', {})
+					result = extract_job_keywords(cv_data, job_data)
+					self._send_json(200, result)
+				except Exception as exc:
+					self._send_json(400, {'error': str(exc)})
+				return
 
-			data = field.file.read()
-			if not data:
-				raise ValueError('Uploaded file is empty.')
+			if self.path == '/api/ai-fill-cv':
+				try:
+					length = int(self.headers.get('Content-Length', '0') or 0)
+					post_data = self.rfile.read(length).decode('utf-8')
+					payload = json.loads(post_data)
+					cv_data = payload.get('cv', {})
+					resume_text = payload.get('resume_text', '')
 
-			filename = (field.filename or '').lower()
+					# Validate that there is relevant info to base suggestions on
+					skills = cv_data.get('skills', [])
+					experience = cv_data.get('experience', [])
+					education = cv_data.get('education', [])
+					if not skills and not experience and not education:
+						raise ValueError("No profile details found (skills, experience, and education are empty). Please enter some information first.")
 
-			# Try LLM parsing
-			result = None
+					result = run_ai_fill_cv(cv_data, resume_text)
+					self._send_json(200, result)
+				except Exception as exc:
+					self._send_json(400, {'error': str(exc)})
+				return
+
+
+
+			if self.path == '/api/tailor-resume':
+				try:
+					length = int(self.headers.get('Content-Length', '0') or 0)
+					post_data = self.rfile.read(length).decode('utf-8')
+					payload = json.loads(post_data)
+					cv_data = payload.get('cv')
+					job_data = payload.get('job')
+					# Accept pre-computed keywords from frontend (optional)
+					matched_kw = payload.get('matched_keywords')
+					missing_kw = payload.get('missing_keywords')
+
+					if not cv_data or not job_data:
+						raise ValueError('Both cv and job payloads are required.')
+
+					tailor_result = run_llm_tailor(cv_data, job_data, matched_kw, missing_kw)
+					self._send_json(200, tailor_result)
+				except Exception as exc:
+					self._send_json(400, {'error': str(exc)})
+				return
+
+			if self.path == '/api/compile-pdf':
+				try:
+					length = int(self.headers.get('Content-Length', '0') or 0)
+					post_data = self.rfile.read(length).decode('utf-8')
+					payload = json.loads(post_data)
+					latex_code = payload.get('latex_code')
+					if not latex_code:
+						raise ValueError('latex_code is required.')
+
+					import base64
+					max_attempts = 3
+					pdf_data = None
+					last_error = None
+					healed_latex = latex_code
+
+					for attempt in range(1, max_attempts + 1):
+						try:
+							if attempt > 1:
+								print(f"[serve.py] Compiling self-healed LaTeX (Attempt {attempt})...")
+							pdf_data = compile_latex_to_pdf(healed_latex)
+							break
+						except Exception as exc:
+							last_error = str(exc)
+							if attempt < max_attempts:
+								print(f"[serve.py] Attempt {attempt} failed: {last_error}. Initiating self-healing...")
+								try:
+									healed_latex = heal_latex_code(healed_latex, last_error)
+								except Exception as heal_exc:
+									print(f"[serve.py] Self-healing request failed: {heal_exc}")
+									raise exc
+							else:
+								raise exc
+
+					if not pdf_data:
+						raise RuntimeError('Failed to compile LaTeX to PDF.')
+
+					self.send_response(200)
+					self.send_header('Content-Type', 'application/pdf')
+					self.send_header('Content-Length', str(len(pdf_data)))
+					self.send_header('Cache-Control', 'no-store')
+					# Send the final (potentially healed) LaTeX code in headers so frontend can sync
+					encoded_latex = base64.b64encode(healed_latex.encode('utf-8')).decode('utf-8')
+					self.send_header('X-Healed-Latex', encoded_latex)
+					self.send_header('Access-Control-Expose-Headers', 'X-Healed-Latex')
+					self.end_headers()
+					self.wfile.write(pdf_data)
+				except Exception as exc:
+					self._send_json(400, {'error': str(exc)})
+				return
+
 			try:
-				result = run_llm_parser(data, filename)
-			except Exception as e:
-				print(f"[serve.py] Error in run_llm_parser: {e}")
+				ctype = self.headers.get('Content-Type', '')
+				if 'multipart/form-data' not in ctype:
+					raise ValueError('Expected multipart form upload.')
+				length = int(self.headers.get('Content-Length', '0') or 0)
+				form = cgi.FieldStorage(
+					fp=self.rfile,
+					headers=self.headers,
+					environ={
+						'REQUEST_METHOD': 'POST',
+						'CONTENT_TYPE': ctype,
+						'CONTENT_LENGTH': str(length),
+					},
+				)
+				field = form['file']
+				if isinstance(field, list):
+					field = field[0]
 
-			if filename.endswith('.pdf') or field.type == 'application/pdf':
-				raw_text = extract_pdf(data)
-			elif filename.endswith('.docx') or 'wordprocessingml' in (field.type or ''):
-				raw_text = extract_docx(data)
-			elif filename.endswith('.txt') or filename.endswith('.md'):
-				raw_text = data.decode('utf-8', errors='replace')
-			else:
-				raise ValueError('Unsupported file type. Use PDF, DOCX, TXT, or MD.')
+				if field is None or getattr(field, 'file', None) is None:
+					raise ValueError('No file uploaded.')
 
-			if not raw_text or not raw_text.strip():
-				raise ValueError('No readable text found in this file.')
+				data = field.file.read()
+				if not data:
+					raise ValueError('Uploaded file is empty.')
 
-			response_payload = {"text": raw_text}
-			if result:
-				response_payload.update(result)
+				filename = (field.filename or '').lower()
 
-			body = json.dumps(response_payload).encode('utf-8')
-			self.send_response(200)
-			self.send_header('Content-Type', 'application/json; charset=utf-8')
-			self.send_header('Content-Length', str(len(body)))
-			self.end_headers()
-			self.wfile.write(body)
-		except Exception as exc:
-			body = json.dumps({'error': str(exc)}).encode('utf-8')
-			self.send_response(400)
-			self.send_header('Content-Type', 'application/json; charset=utf-8')
-			self.send_header('Content-Length', str(len(body)))
-			self.end_headers()
-			self.wfile.write(body)
+				# Try LLM parsing
+				result = None
+				try:
+					result = run_llm_parser(data, filename)
+				except Exception as e:
+					print(f"[serve.py] Error in run_llm_parser: {e}")
+
+				if filename.endswith('.pdf') or field.type == 'application/pdf':
+					raw_text = extract_pdf(data)
+				elif filename.endswith('.docx') or 'wordprocessingml' in (field.type or ''):
+					raw_text = extract_docx(data)
+				elif filename.endswith('.txt') or filename.endswith('.md'):
+					raw_text = data.decode('utf-8', errors='replace')
+				else:
+					raise ValueError('Unsupported file type. Use PDF, DOCX, TXT, or MD.')
+
+				if not raw_text or not raw_text.strip():
+					raise ValueError('No readable text found in this file.')
+
+				response_payload = {"text": raw_text}
+				if result:
+					response_payload.update(result)
+
+				body = json.dumps(response_payload).encode('utf-8')
+				self.send_response(200)
+				self.send_header('Content-Type', 'application/json; charset=utf-8')
+				self.send_header('Content-Length', str(len(body)))
+				self.end_headers()
+				self.wfile.write(body)
+			except Exception as exc:
+				body = json.dumps({'error': str(exc)}).encode('utf-8')
+				self.send_response(400)
+				self.send_header('Content-Type', 'application/json; charset=utf-8')
+				self.send_header('Content-Length', str(len(body)))
+				self.end_headers()
+				self.wfile.write(body)
+		except ConnectionError as ce:
+			print(f"[serve.py] Connection error during POST {self.path}: {ce}")
 
 
 def main():
